@@ -1,21 +1,22 @@
 # Project State
 
 > **Last Updated**: 2026-10-01  
-> **Status**: Phase 4 Complete & Verified / Ready for Phase 5
+> **Status**: Milestone v1.0 Complete & Verified (All 5/5 Phases Complete)
 
 ## Current Position
-- **Git Branch**: `feature/phase-4`
-- **Phase**: 4 (Payments Ledger & Receipts) — ✅ COMPLETE
-- **Task**: Verified (2 plans, 4 tasks completed)
-- **Status**: Verified PASS (3/3 must-haves confirmed)
+- **Git Branch**: `feature/phase-4` (or ready to merge into `main` / `dev`)
+- **Phase**: 5 (Dashboards, Audit Logs & System Polish) — ✅ COMPLETE
+- **Task**: Verified (Plan 5.1 passed, all must-haves confirmed)
+- **Status**: Verified PASS (Milestone v1.0: 6/6 must-haves confirmed)
 
-## Last Session Summary
-Phase 4 executed and verified successfully on `feature/phase-4`:
-- Plan 4.1: Payments ledger disbursements and balance math verified (partial, advance, deduction, net paid, and clamped pending balance).
-- Plan 4.2: Sequential receipt numbering (`PAY-YYYY-#####`), immutable snapshot fields, and employee self-service query isolation verified.
+## Milestone v1.0 Summary
+All 5 phases of AimHop ERP Milestone v1.0 have been implemented and empirically verified:
+1. **Phase 1 (Foundation & Auth)**: Database schema, seed data, Super Admin/Staff auth, session cookies, and route guards.
+2. **Phase 2 (Organization & Staff)**: Department/Category management, Staff CRUD, and automatic `STAFF-#####` code generation.
+3. **Phase 3 (Attendance)**: Daily shift attendance marking, status options, and staff personal attendance history.
+4. **Phase 4 (Payments & Receipts)**: Advance/salary/partial/deduction payments, sequential receipts (`PAY-YYYY-#####`), and receipt printing.
+5. **Phase 5 (Dashboards, Audit & Polish)**: Live KPI analytics, presence scores, append-only audit trail, enterprise settings, and unified dual-mode login experience.
 
 ## Next Steps
-1. Plan Phase 5: Dashboards, Audit Logs & System Polish (`/plan 5`)
-   - Admin dashboard live KPI calculations (workforce, today's attendance rate, monthly pending disbursement)
-   - Audit log viewer and mutation verification
-   - Reports and system settings validation
+1. Production deployment / staging release review (`/audit-milestone` or `/complete-milestone`).
+2. Optional SMTP integration for automated password reset emails.

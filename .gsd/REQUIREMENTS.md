@@ -12,5 +12,6 @@
 | REQ-06 | Daily attendance marking interface with status (present, absent, half_day, leave, holiday) and staff personal history view | SPEC Goal 4 | Complete (Plans 3.1 & 3.2) |
 | REQ-07 | Payments ledger supporting salary, advances, partial payments, and deductions with period calculations | SPEC Goal 5 | Complete (Plan 4.1) |
 | REQ-08 | Payment receipt generation with sequence numbering (PAY-YYYY-#####), immutable snapshot, and print/download view | SPEC Goal 5 | Complete (Plan 4.2) |
-| REQ-09 | Admin dashboard KPI cards showing live workforce, attendance rate, and pending payment calculations | SPEC Goal 6 | Pending |
-| REQ-10 | Append-only audit logging capturing actor, action, entity, timestamp, and changes on administrative mutations | SPEC Goal 6 | Pending |
+| REQ-09 | Admin dashboard KPI cards showing live workforce, attendance rate, and pending payment calculations | SPEC Goal 6 | Complete (Plan 5.1) |
+| REQ-10 | Append-only audit logging capturing actor, action, entity, timestamp, and changes on administrative mutations | SPEC Goal 6 | Complete (Plan 5.1) |
+

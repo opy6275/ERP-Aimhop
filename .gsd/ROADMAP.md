@@ -4,12 +4,12 @@
 > **Milestone**: v1.0
 
 ## Must-Haves (from SPEC)
-- [ ] Clean database initialization and seeded administrator credentials.
-- [ ] Role-based access control protecting `/admin/*` routes from unauthorized staff.
-- [ ] Functional staff management with automated code generation.
-- [ ] Daily attendance marking with employee self-view.
-- [ ] Salary disbursement recording with printable receipt generation.
-- [ ] Live dashboard KPIs and administrative audit logging.
+- [x] Clean database initialization and seeded administrator credentials.
+- [x] Role-based access control protecting `/admin/*` routes from unauthorized staff.
+- [x] Functional staff management with automated code generation.
+- [x] Daily attendance marking with employee self-view.
+- [x] Salary disbursement recording with printable receipt generation.
+- [x] Live dashboard KPIs and administrative audit logging.
 
 ## Phases
 
@@ -34,6 +34,7 @@
 **Requirements**: REQ-07, REQ-08  
 
 ### Phase 5: Dashboards, Audit Logs & System Polish
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Objective**: Wire up live SQL KPI cards on Admin Dashboard, audit log tracking for all mutations, reports generation, and company settings configuration.  
 **Requirements**: REQ-09, REQ-10  
+
