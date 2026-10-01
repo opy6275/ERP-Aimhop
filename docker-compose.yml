@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aimhop-erp-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aimhop
+      POSTGRES_PASSWORD: aimhop_local
+      POSTGRES_DB: aimhop_erp
+    ports:
+      - "5432:5432"
+    volumes:
+      - aimhop_pg_data:/var/lib/postgresql/data
+
+volumes:
+  aimhop_pg_data:

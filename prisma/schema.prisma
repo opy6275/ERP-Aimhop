@@ -1,0 +1,268 @@
+// aimhop-ERP — local SQLite (Docker/Postgres baad me production ke liye)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum StaffStatus {
+  active
+  inactive
+}
+
+enum PaymentType {
+  monthly
+  daily
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  leave
+  half_day
+  holiday
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+  upi
+  other
+}
+
+enum PaymentKind {
+  salary
+  partial
+  advance
+  deduction
+  adjustment
+}
+
+model Company {
+  id            String   @id @default(cuid())
+  name          String
+  legalName     String?  @map("legal_name")
+  address       String?
+  logoUrl       String?  @map("logo_url")
+  currency      String   @default("INR")
+  timezone      String   @default("Asia/Kolkata")
+  receiptFooter String?  @map("receipt_footer")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("companies")
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  name        String
+  isSystem    Boolean          @default(true) @map("is_system")
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  code        String?  @unique
+  name        String
+  description String?
+  headStaffId String?  @map("head_staff_id")
+  status      String   @default("active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  staff       Staff[]
+
+  @@map("departments")
+}
+
+model StaffCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  staff       Staff[]
+
+  @@map("staff_categories")
+}
+
+model Staff {
+  id             String        @id @default(cuid())
+  staffCode      String        @unique @map("staff_code")
+  fullName       String        @map("full_name")
+  photoUrl       String?       @map("photo_url")
+  gender         String?
+  dateOfBirth    DateTime?     @map("date_of_birth")
+  mobile         String?
+  email          String?
+  address        String?
+  departmentId   String        @map("department_id")
+  categoryId     String        @map("category_id")
+  designation    String?
+  joiningDate    DateTime?     @map("joining_date")
+  employmentType String?       @map("employment_type")
+  status         StaffStatus   @default(active)
+  salaryAmount   Decimal       @default(0) @map("salary_amount")
+  paymentType    PaymentType   @default(monthly) @map("payment_type")
+  bankName       String?       @map("bank_name")
+  accountNumber  String?       @map("account_number")
+  ifsc           String?
+  upiId          String?       @map("upi_id")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  department Department         @relation(fields: [departmentId], references: [id])
+  category   StaffCategory      @relation(fields: [categoryId], references: [id])
+  user       User?
+  attendance AttendanceRecord[]
+  payments   Payment[]
+  documents  StaffDocument[]
+
+  @@index([departmentId, status])
+  @@map("staff")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  roleId       String    @map("role_id")
+  staffId      String?   @unique @map("staff_id")
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  role               Role               @relation(fields: [roleId], references: [id])
+  staff              Staff?             @relation(fields: [staffId], references: [id])
+  auditLogs          AuditLog[]
+  paymentsCreated    Payment[]          @relation("PaymentCreatedBy")
+  attendanceMarked   AttendanceRecord[] @relation("AttendanceMarkedBy")
+  documentsUploaded  StaffDocument[]
+
+  @@map("users")
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  staffId    String           @map("staff_id")
+  date       DateTime
+  status     AttendanceStatus
+  note       String?
+  markedById String?          @map("marked_by")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  staff    Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  markedBy User? @relation("AttendanceMarkedBy", fields: [markedById], references: [id])
+
+  @@unique([staffId, date])
+  @@index([date])
+  @@map("attendance_records")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  staffId       String        @map("staff_id")
+  periodMonth   DateTime      @map("period_month")
+  paymentDate   DateTime      @map("payment_date")
+  amount        Decimal
+  paymentMethod PaymentMethod @map("payment_method")
+  paymentKind   PaymentKind   @map("payment_kind")
+  note          String?
+  createdById   String        @map("created_by")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  staff     Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  createdBy User            @relation("PaymentCreatedBy", fields: [createdById], references: [id])
+  receipt   PaymentReceipt?
+
+  @@index([staffId, periodMonth])
+  @@map("payments")
+}
+
+model PaymentReceipt {
+  id             String   @id @default(cuid())
+  receiptNumber  String   @unique @map("receipt_number")
+  paymentId      String   @unique @map("payment_id")
+  companyName    String   @map("company_name")
+  employeeName   String   @map("employee_name")
+  staffCode      String   @map("staff_code")
+  departmentName String   @map("department_name")
+  periodLabel    String   @map("period_label")
+  amountPaid     Decimal  @map("amount_paid")
+  paymentMethod  String   @map("payment_method")
+  authorizedBy   String?  @map("authorized_by")
+  issuedAt       DateTime @default(now()) @map("issued_at")
+  issuedById     String?  @map("issued_by")
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@map("payment_receipts")
+}
+
+model ReceiptSequence {
+  year       Int @id
+  lastNumber Int @default(0) @map("last_number")
+
+  @@map("receipt_sequences")
+}
+
+model StaffDocument {
+  id           String   @id @default(cuid())
+  staffId      String   @map("staff_id")
+  type         String
+  fileKey      String   @map("file_key")
+  fileName     String   @map("file_name")
+  uploadedById String   @map("uploaded_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  staff      Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation(fields: [uploadedById], references: [id])
+
+  @@map("staff_documents")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?  @map("actor_user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  targetLabel String?  @map("target_label")
+  changes     Json?
+  ip          String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
