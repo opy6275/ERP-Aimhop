@@ -1,22 +1,18 @@
 # Project State
 
 > **Last Updated**: 2026-10-01  
-> **Status**: Phase 3 Complete & Verified / Ready for Phase 4
+> **Status**: Phase 4 Planned / Ready for Execution
 
 ## Current Position
-- **Git Branch**: `feature/phase-3`
-- **Phase**: 3 (Attendance Management) — ✅ COMPLETE
-- **Task**: Verified (2 plans, 4 tasks completed)
-- **Status**: Verified PASS (3/3 must-haves confirmed)
+- **Git Branch**: `feature/phase-4`
+- **Phase**: 4 (Payments Ledger & Receipts)
+- **Task**: Planning complete (2 plans across 2 waves)
+- **Status**: Ready for execution
 
-## Last Session Summary
-Phase 3 executed and verified successfully on `feature/phase-3`:
-- Plan 3.1: Admin daily attendance management validated (query by date/department, bulk status upsert, unique constraint idempotency, and audit logging).
-- Plan 3.2: Staff self-service attendance verified (daily check-in, same-day updates, monthly range queries, status counts aggregation, and strict data isolation).
+## Plans in Phase 4
+- **Plan 4.1**: Payments Ledger & Balance Mathematics (`.gsd/phases/4/01-PLAN.md`) — Wave 1
+- **Plan 4.2**: Sequential Receipts & Staff Self-Service Ledger (`.gsd/phases/4/02-PLAN.md`) — Wave 2 (depends on 4.1)
 
 ## Next Steps
-1. Plan Phase 4: Payments Ledger & Receipts (`/plan 4`)
-   - Payment disbursements (salary, advance, partial payment, deduction)
-   - Sequential receipt generation (`PAY-YYYY-#####`)
-   - Immutable receipt snapshots and printable views
-   - Staff my payments view
+1. Execute Plan 4.1: Payments ledger & balance math verification (`node scripts/test-payments-ledger.js`)
+2. Execute Plan 4.2: Sequential receipt numbering & staff self-service payment isolation (`node scripts/test-receipts-sequence.js`)
