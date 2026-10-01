@@ -1,19 +1,18 @@
 # Project State
 
 > **Last Updated**: 2026-10-01  
-> **Status**: Phase 1 Complete & Verified / Ready for Phase 2
+> **Status**: Phase 2 Planned / Ready for Execution
 
 ## Current Position
-- **Phase**: 1 (Foundation & Auth Verification) — ✅ COMPLETE
-- **Task**: Verified (2 plans, 4 tasks completed)
-- **Status**: Verified PASS (3/3 must-haves confirmed)
+- **Git Branch**: `feature/phase-2`
+- **Phase**: 2 (Organization & Staff Management)
+- **Task**: Planning complete (2 plans across 2 waves)
+- **Status**: Ready for execution
 
-## Last Session Summary
-Phase 1 executed and verified successfully:
-- Plan 1.1: Database schema verified, SQLite tables synchronized, seed data verified (Company, 3 Roles, 25 Permissions, 9 Staff, 3 Users).
-- Plan 1.2: Authentication & RBAC verified with automated tests (bcrypt checks, HMAC session signing, tamper protection, middleware route redirection, and IDOR prevention).
+## Plans in Phase 2
+- **Plan 2.1**: Department and Staff Category Management (`.gsd/phases/2/01-PLAN.md`) — Wave 1
+- **Plan 2.2**: Staff Lifecycle & Profile Management (`.gsd/phases/2/02-PLAN.md`) — Wave 2 (depends on 2.1)
 
 ## Next Steps
-1. Plan Phase 2: Organization & Staff Management (`/plan 2`)
-   - Departments & Staff Categories management
-   - Staff creation, search, filter, edit, and auto `STAFF-#####` generation
+1. Execute Plan 2.1: Department and Category management verification (`node scripts/test-departments.js`, `node scripts/test-categories.js`)
+2. Execute Plan 2.2: Staff code allocation, CRUD, search/filter, and salary privacy masking (`node scripts/test-staff-lifecycle.js`)
