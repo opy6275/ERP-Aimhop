@@ -23,10 +23,10 @@
 
 ## Items
 
-- [ ] Execute Prisma db push / seed and verify super admin credentials in local database `high` — 2026-10-01
-- [ ] Test login flow and role-based redirects (/admin vs /app) `high` — 2026-10-01
-- [ ] Verify staff cannot access admin endpoints or other staff records `high` — 2026-10-01
-- [ ] Set up automated unit/integration tests for auth and RBAC `medium` — 2026-10-01
+- [x] Execute Prisma db push / seed and verify super admin credentials in local database `high` — 2026-10-01 ✓ 2026-10-01
+- [x] Test login flow and role-based redirects (/admin vs /app) `high` — 2026-10-01 ✓ 2026-10-01
+- [x] Verify staff cannot access admin endpoints or other staff records `high` — 2026-10-01 ✓ 2026-10-01
+- [x] Set up automated unit/integration tests for auth and RBAC `medium` — 2026-10-01 ✓ 2026-10-01
 
 ---
 
