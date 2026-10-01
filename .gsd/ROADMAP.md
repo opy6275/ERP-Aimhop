@@ -19,7 +19,7 @@
 **Requirements**: REQ-01, REQ-02, REQ-03  
 
 ### Phase 2: Organization & Staff Management
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Objective**: Verify and refine Department and Staff Category management, Staff CRUD flows, auto-generation of `STAFF-#####` codes, and profile details editing.  
 **Requirements**: REQ-04, REQ-05  
 
