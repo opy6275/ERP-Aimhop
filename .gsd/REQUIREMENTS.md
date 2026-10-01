@@ -4,9 +4,9 @@
 
 | ID | Requirement | Source | Status |
 |----|-------------|--------|--------|
-| REQ-01 | Database schema migrations and seed execution with initial company, roles, permissions, and admin accounts | SPEC Goal 1 | Pending |
-| REQ-02 | Authentication and cookie session management with role-based routing (/admin vs /app) and middleware protection | SPEC Goal 2 | Pending |
-| REQ-03 | Strict data scoping where staff API endpoints (/api/v1/me/*) restrict records exclusively to the logged-in staff | SPEC Goal 2 | Pending |
+| REQ-01 | Database schema migrations and seed execution with initial company, roles, permissions, and admin accounts | SPEC Goal 1 | Complete (Plan 1.1) |
+| REQ-02 | Authentication and cookie session management with role-based routing (/admin vs /app) and middleware protection | SPEC Goal 2 | Complete (Plan 1.2) |
+| REQ-03 | Strict data scoping where staff API endpoints (/api/v1/me/*) restrict records exclusively to the logged-in staff | SPEC Goal 2 | Complete (Plan 1.2) |
 | REQ-04 | Department and Staff Category management with CRUD and active/inactive status | SPEC Goal 3 | Pending |
 | REQ-05 | Staff profile lifecycle with automatic STAFF-##### code generation, details, bank info, and department/category linkage | SPEC Goal 3 | Pending |
 | REQ-06 | Daily attendance marking interface with status (present, absent, half_day, leave, holiday) and staff personal history view | SPEC Goal 4 | Pending |
