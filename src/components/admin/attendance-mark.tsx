@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { CheckCircle2, CalendarCheck, Clock } from "@/components/ui/icons";
+import { CheckCircle2, Clock } from "@/components/ui/icons";
 
 type StaffRow = {
   id: string;

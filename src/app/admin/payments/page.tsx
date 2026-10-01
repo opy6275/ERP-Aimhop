@@ -6,6 +6,7 @@ import { DataTable, Td } from "@/components/ui/data-table";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
+import type { PaymentMethod, PaymentKind } from "@prisma/client";
 import { computePeriodBalance } from "@/lib/domain";
 import { decimalToNumber, formatDate, formatInr, formatMonthLabel } from "@/lib/format";
 import {
@@ -36,8 +37,8 @@ export default async function PaymentsPage({
   const [payments, activeStaff, monthPayments] = await Promise.all([
     prisma.payment.findMany({
       where: {
-        ...(method ? { paymentMethod: method as any } : {}),
-        ...(kind ? { paymentKind: kind as any } : {}),
+        ...(method ? { paymentMethod: method as PaymentMethod } : {}),
+        ...(kind ? { paymentKind: kind as PaymentKind } : {}),
         ...(q
           ? {
               staff: {

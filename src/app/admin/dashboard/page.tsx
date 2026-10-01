@@ -17,7 +17,6 @@ import {
   Plus,
   ArrowUpRight,
   ShieldCheck,
-  Receipt,
   Clock,
   Sparkles,
   Activity as ActivityIcon,

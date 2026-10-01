@@ -17,7 +17,6 @@ import {
   Activity,
   Settings,
   LogOut,
-  Sparkles,
 } from "@/components/ui/icons";
 import { SearchCommand } from "@/components/ui/search-command";
 

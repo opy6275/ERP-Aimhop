@@ -7,7 +7,7 @@ import { DataTable, Td } from "@/components/ui/data-table";
 import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatInr } from "@/lib/format";
-import { UserPlus, Search, Filter, ArrowUpRight } from "@/components/ui/icons";
+import { UserPlus, Search, Filter } from "@/components/ui/icons";
 
 export default async function StaffListPage({
   searchParams,

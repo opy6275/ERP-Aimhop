@@ -5,7 +5,7 @@ import { KpiCard } from "@/components/ui/kpi-card";
 import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatInr } from "@/lib/format";
-import { BarChart3, Users, Building2, Tags, CreditCard } from "@/components/ui/icons";
+import { Users, Building2, Tags, CreditCard } from "@/components/ui/icons";
 
 export default async function ReportsPage() {
   const { session, roleLabel } = await requirePageSession({ adminOnly: true });

@@ -7,8 +7,9 @@ import { rateLimit } from "@/lib/security";
 import { writeAudit } from "@/lib/audit";
 
 const bodySchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
+  email: z.string().min(1, "Please enter your email or username"),
+  password: z.string().min(1, "Please enter your password"),
+  roleMode: z.enum(["admin", "staff"]).optional(),
 });
 
 export async function POST(request: Request) {
@@ -27,28 +28,59 @@ export async function POST(request: Request) {
 
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
-    return apiError("VALIDATION_ERROR", "Enter a valid email and password", 400);
+    return apiError("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid login input", 400);
   }
 
-  const { email, password } = parsed.data;
+  const { email: identifier, password, roleMode } = parsed.data;
+  const rawQuery = identifier.trim();
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+    // Look up user by email directly or by linked staff code
+    const isEmail = rawQuery.includes("@");
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: rawQuery.toLowerCase() },
+          ...(!isEmail
+            ? [
+                { staff: { staffCode: rawQuery.toUpperCase() } },
+                { staff: { email: rawQuery.toLowerCase() } },
+              ]
+            : []),
+        ],
+      },
       include: {
         role: {
           include: { permissions: { include: { permission: true } } },
         },
+        staff: true,
       },
     });
 
     if (!user || !user.isActive) {
-      return apiError("UNAUTHORIZED", "Invalid email or password", 401);
+      return apiError("UNAUTHORIZED", "Invalid email, username or password", 401);
     }
 
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
-      return apiError("UNAUTHORIZED", "Invalid email or password", 401);
+      return apiError("UNAUTHORIZED", "Invalid email, username or password", 401);
+    }
+
+    // Role-mode enforcement
+    if (roleMode === "admin" && user.role.slug === "staff") {
+      return apiError(
+        "FORBIDDEN",
+        "Access denied: This account is registered as Staff. Please switch to the Staff Login tab to access your employee portal.",
+        403,
+      );
+    }
+
+    if (roleMode === "staff" && user.role.slug !== "staff") {
+      return apiError(
+        "FORBIDDEN",
+        "Access denied: This account holds Administrator credentials. Please switch to the Admin Login tab to access the management portal.",
+        403,
+      );
     }
 
     await prisma.user.update({
@@ -71,22 +103,23 @@ export async function POST(request: Request) {
       action: "auth.login",
       entityType: "user",
       entityId: user.id,
-      targetLabel: user.email,
+      targetLabel: `${user.email} (${user.role.slug}) via ${roleMode ?? "direct"}`,
       ip,
     });
 
     const res = apiOk({
-      message: `Welcome, ${user.role.name}`,
+      message: `Welcome back, ${user.role.name}`,
       role: user.role.slug,
       permissions: user.role.permissions.map((p) => p.permission.key),
       redirectTo,
     });
     res.cookies.set(sessionCookieOptions(token));
     return res;
-  } catch {
+  } catch (err: unknown) {
+    console.error("Login route error:", err);
     return apiError(
       "SERVICE_UNAVAILABLE",
-      "Database unavailable. Run prisma db push and db:seed.",
+      "Database service unavailable. Please try again shortly.",
       503,
     );
   }
