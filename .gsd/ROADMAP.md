@@ -29,7 +29,7 @@
 **Requirements**: REQ-06  
 
 ### Phase 4: Payments Ledger & Receipts
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Objective**: Build and verify payment recording (salary, advance, partial payment, deduction), automated receipt sequence generation (`PAY-YYYY-#####`), printable receipt modal, and staff self-service payment history.  
 **Requirements**: REQ-07, REQ-08  
 

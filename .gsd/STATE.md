@@ -1,18 +1,21 @@
 # Project State
 
 > **Last Updated**: 2026-10-01  
-> **Status**: Phase 4 Planned / Ready for Execution
+> **Status**: Phase 4 Complete & Verified / Ready for Phase 5
 
 ## Current Position
 - **Git Branch**: `feature/phase-4`
-- **Phase**: 4 (Payments Ledger & Receipts)
-- **Task**: Planning complete (2 plans across 2 waves)
-- **Status**: Ready for execution
+- **Phase**: 4 (Payments Ledger & Receipts) — ✅ COMPLETE
+- **Task**: Verified (2 plans, 4 tasks completed)
+- **Status**: Verified PASS (3/3 must-haves confirmed)
 
-## Plans in Phase 4
-- **Plan 4.1**: Payments Ledger & Balance Mathematics (`.gsd/phases/4/01-PLAN.md`) — Wave 1
-- **Plan 4.2**: Sequential Receipts & Staff Self-Service Ledger (`.gsd/phases/4/02-PLAN.md`) — Wave 2 (depends on 4.1)
+## Last Session Summary
+Phase 4 executed and verified successfully on `feature/phase-4`:
+- Plan 4.1: Payments ledger disbursements and balance math verified (partial, advance, deduction, net paid, and clamped pending balance).
+- Plan 4.2: Sequential receipt numbering (`PAY-YYYY-#####`), immutable snapshot fields, and employee self-service query isolation verified.
 
 ## Next Steps
-1. Execute Plan 4.1: Payments ledger & balance math verification (`node scripts/test-payments-ledger.js`)
-2. Execute Plan 4.2: Sequential receipt numbering & staff self-service payment isolation (`node scripts/test-receipts-sequence.js`)
+1. Plan Phase 5: Dashboards, Audit Logs & System Polish (`/plan 5`)
+   - Admin dashboard live KPI calculations (workforce, today's attendance rate, monthly pending disbursement)
+   - Audit log viewer and mutation verification
+   - Reports and system settings validation
