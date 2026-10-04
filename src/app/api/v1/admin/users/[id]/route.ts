@@ -8,6 +8,7 @@ import { writeAudit } from "@/lib/audit";
 type Ctx = { params: Promise<{ id: string }> };
 
 const updateSchema = z.object({
+  email: z.string().email().optional(),
   roleId: z.string().optional(),
   isActive: z.boolean().optional(),
   password: z.string().min(6).optional(),
@@ -32,11 +33,22 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
   const d = parsed.data;
   const updateData: {
+    email?: string;
     roleId?: string;
     isActive?: boolean;
     passwordHash?: string;
     staffId?: string | null;
   } = {};
+
+  if (d.email && d.email.toLowerCase() !== existing.email) {
+    const emailConflict = await prisma.user.findUnique({
+      where: { email: d.email.toLowerCase() },
+    });
+    if (emailConflict) {
+      return apiError("CONFLICT", `User with email "${d.email}" already exists.`, 400);
+    }
+    updateData.email = d.email.toLowerCase();
+  }
 
   if (d.roleId) updateData.roleId = d.roleId;
   if (d.isActive !== undefined) updateData.isActive = d.isActive;

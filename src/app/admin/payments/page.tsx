@@ -20,6 +20,24 @@ import {
 } from "@/components/ui/icons";
 import { PaymentRowActions } from "@/components/admin/payment-row-actions";
 
+type PaymentRecord = {
+  id: string;
+  paymentDate: Date;
+  periodMonth: Date;
+  amount: any;
+  paymentMethod: string;
+  paymentKind: string;
+  emailSentAt?: Date | null;
+  emailSentTo?: string | null;
+  staff: {
+    id: string;
+    fullName: string;
+    staffCode: string;
+    department: { name: string };
+  };
+  receipt: { id: string; receiptNumber: string } | null;
+};
+
 export default async function PaymentsPage({
   searchParams,
 }: {
@@ -222,7 +240,7 @@ export default async function PaymentsPage({
             "Action",
           ]}
         >
-          {payments.map((p) => {
+          {(payments as PaymentRecord[]).map((p) => {
             const initials = p.staff.fullName
               .split(" ")
               .map((n) => n[0])
@@ -309,6 +327,8 @@ export default async function PaymentsPage({
                     paymentId={p.id}
                     amountFormatted={formatInr(decimalToNumber(p.amount))}
                     employeeName={p.staff.fullName}
+                    emailSentAt={p.emailSentAt ? formatDate(p.emailSentAt) : null}
+                    emailSentTo={p.emailSentTo || null}
                     receipt={
                       p.receipt
                         ? {

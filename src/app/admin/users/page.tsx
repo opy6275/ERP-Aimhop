@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DataTable, Td } from "@/components/ui/data-table";
 import { KpiCard } from "@/components/ui/kpi-card";
+import { Users, ShieldCheck, Shield, IdCard } from "@/components/ui/icons";
 import { UserCreateModal } from "@/components/admin/user-create-modal";
 import { UserRowActions } from "@/components/admin/user-row-actions";
 import { requirePageSession } from "@/lib/require-page-session";
@@ -57,27 +58,27 @@ export default async function UsersPage() {
           label="Total User Accounts"
           value={totalUsers}
           hint="Configured credentials"
-          icon="users"
+          icon={<Users size={18} />}
         />
         <KpiCard
           label="Active Accounts"
           value={activeUsers}
           hint="Can authenticate"
           tone="success"
-          icon="shield"
+          icon={<ShieldCheck size={18} />}
         />
         <KpiCard
           label="Admin Privileges"
           value={adminUsers}
           hint="Admin & Super Admin"
           tone="accent"
-          icon="shield"
+          icon={<Shield size={18} />}
         />
         <KpiCard
           label="Staff Portal Linked"
           value={staffUsers}
           hint="Self-service employees"
-          icon="id-card"
+          icon={<IdCard size={18} />}
         />
       </div>
 

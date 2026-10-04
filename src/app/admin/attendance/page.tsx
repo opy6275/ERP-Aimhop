@@ -8,6 +8,7 @@ import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { formatDate, toDateOnlyUtc } from "@/lib/format";
 import { CalendarCheck, History } from "@/components/ui/icons";
+import { AdminMusterRollModal } from "@/components/attendance/admin-muster-roll-modal";
 
 export default async function AttendancePage({
   searchParams,
@@ -47,6 +48,7 @@ export default async function AttendancePage({
           { label: "Operations", href: "/admin/attendance" },
           { label: "Attendance" },
         ]}
+        actionNode={<AdminMusterRollModal />}
       />
 
       <Panel

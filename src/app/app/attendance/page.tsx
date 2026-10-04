@@ -8,6 +8,7 @@ import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { formatDate, toDateOnlyUtc } from "@/lib/format";
 import { StaffCheckinCard } from "@/components/staff/staff-checkin-card";
+import { StaffMonthlySheetModal } from "@/components/attendance/staff-monthly-sheet-modal";
 
 export default async function StaffAttendancePage() {
   const { session, user, roleLabel } = await requirePageSession({ staffOnly: true });
@@ -19,7 +20,7 @@ export default async function StaffAttendancePage() {
     ? await Promise.all([
         prisma.staff.findUnique({
           where: { id: staffId },
-          select: { fullName: true },
+          select: { fullName: true, staffCode: true },
         }),
         prisma.attendanceRecord.findUnique({
           where: { staffId_date: { staffId, date: today } },
@@ -54,6 +55,7 @@ export default async function StaffAttendancePage() {
           { label: "Staff Portal", href: "/app/dashboard" },
           { label: "Attendance" },
         ]}
+        actionNode={<StaffMonthlySheetModal initialStaff={staff || undefined} />}
       />
 
       {staff && (

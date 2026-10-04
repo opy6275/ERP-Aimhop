@@ -55,6 +55,18 @@ const STYLES: Record<string, { bg: string; text: string; border: string; dot: st
     border: "border-amber-200/80",
     dot: "bg-amber-500 ring-amber-200",
   },
+  approved: {
+    bg: "bg-emerald-50/90",
+    text: "text-emerald-700",
+    border: "border-emerald-200/80",
+    dot: "bg-emerald-500 ring-emerald-200",
+  },
+  rejected: {
+    bg: "bg-rose-50/90",
+    text: "text-rose-700",
+    border: "border-rose-200/80",
+    dot: "bg-rose-500 ring-rose-200",
+  },
 };
 
 export function StatusBadge({

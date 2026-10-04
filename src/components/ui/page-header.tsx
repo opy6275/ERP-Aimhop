@@ -16,12 +16,14 @@ export function PageHeader({
   badge,
   breadcrumbs,
   actions,
+  actionNode,
 }: {
   title: string;
   description?: string;
   badge?: React.ReactNode;
   breadcrumbs?: { label: string; href?: string }[];
   actions?: PageAction[];
+  actionNode?: React.ReactNode;
 }) {
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -54,9 +56,9 @@ export function PageHeader({
         ) : null}
       </div>
 
-      {actions?.length ? (
+      {(actions?.length || actionNode) ? (
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          {actions.map((a, i) => {
+          {actions?.map((a, i) => {
             const variantCls =
               a.variant === "secondary"
                 ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-xs"
@@ -84,6 +86,7 @@ export function PageHeader({
               </button>
             );
           })}
+          {actionNode}
         </div>
       ) : null}
     </div>

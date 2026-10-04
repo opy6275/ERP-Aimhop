@@ -7,11 +7,12 @@ import {
   Lock,
   Eye,
   EyeOff,
-  ShieldCheck,
   User,
   ArrowRight,
   Shield,
   CheckCircle2,
+  Key,
+  X,
 } from "@/components/ui/icons";
 
 type LoginRole = "admin" | "staff";
@@ -26,7 +27,115 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Email OTP Forgot Password states
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetOtp, setResetOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [devOtpNote, setDevOtpNote] = useState<string | null>(null);
+
+  function openForgotModal() {
+    setResetStep(1);
+    setResetEmail(identifier.includes("@") ? identifier : "");
+    setResetOtp("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setResetError(null);
+    setResetSuccess(null);
+    setDevOtpNote(null);
+    setForgotModalOpen(true);
+  }
+
+  async function handleRequestOtp(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (!resetEmail.trim() || !resetEmail.includes("@")) {
+      setResetError("Please enter a valid email address.");
+      return;
+    }
+    setResetLoading(true);
+    setResetError(null);
+    setResetSuccess(null);
+    try {
+      const res = await fetch("/api/v1/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResetError(data.error?.message ?? data.message ?? "Failed to send code. Please try again.");
+        return;
+      }
+      setResetStep(2);
+      setResetSuccess(data.message ?? data.data?.message ?? `Verification code sent to ${resetEmail}`);
+      const otpCode = data.devOtp ?? data.data?.devOtp;
+      if (otpCode) {
+        setDevOtpNote(otpCode);
+      }
+    } catch {
+      setResetError("Network error while requesting code. Please try again.");
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (resetOtp.length !== 6) {
+      setResetError("Please enter the complete 6-digit code.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setResetError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetError("Passwords do not match.");
+      return;
+    }
+
+    setResetLoading(true);
+    setResetError(null);
+    setResetSuccess(null);
+
+    try {
+      const res = await fetch("/api/v1/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: resetEmail.trim(),
+          otp: resetOtp.trim(),
+          newPassword,
+          confirmPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResetError(data.error?.message ?? data.message ?? "Failed to reset password.");
+        return;
+      }
+
+      setResetSuccess("Password reset successfully! Updating login form...");
+      setIdentifier(resetEmail.trim());
+      setPassword(newPassword);
+
+      setTimeout(() => {
+        setForgotModalOpen(false);
+        setSuccess("Password updated! Click Sign In to access your workspace.");
+      }, 1400);
+    } catch {
+      setResetError("Network error while resetting password.");
+    } finally {
+      setResetLoading(false);
+    }
+  }
 
   function handleRoleSwitch(newMode: LoginRole) {
     if (newMode === roleMode) return;
@@ -94,87 +203,50 @@ export function LoginForm() {
     }
   }
 
-  function setQuickCredentials(role: LoginRole, idVal: string, passVal: string) {
-    setRoleMode(role);
-    setIdentifier(idVal);
-    setPassword(passVal);
-    setError(null);
-  }
+
 
   return (
     <div className="w-full">
-      {/* Role Switcher / Toggle */}
-      <div className="mb-3">
-        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-100/90 border border-slate-200/80">
-          {/* Admin Login Button */}
+      {/* Role Switcher Tabs */}
+      <div className="mb-4">
+        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200/80">
           <button
             type="button"
             onClick={() => handleRoleSwitch("admin")}
-            className={`relative flex items-center gap-2 p-2 sm:p-2.5 rounded-lg transition-all duration-200 text-left cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               roleMode === "admin"
-                ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-sm shadow-orange-500/25 ring-2 ring-orange-500/20 font-semibold"
-                : "bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-200/60"
+                ? "bg-white text-orange-600 shadow-xs border border-slate-200/60"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <div
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
-                roleMode === "admin" ? "bg-white/20 text-white" : "bg-orange-50 text-orange-600"
-              }`}
-            >
-              <Shield size={15} />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs sm:text-sm font-bold leading-tight">Admin Login</div>
-              <div
-                className={`text-[10px] truncate leading-tight ${
-                  roleMode === "admin" ? "text-orange-100" : "text-slate-400"
-                }`}
-              >
-                Authorized admins
-              </div>
-            </div>
+            <Shield size={14} />
+            <span>Admin</span>
           </button>
 
-          {/* Staff Login Button */}
           <button
             type="button"
             onClick={() => handleRoleSwitch("staff")}
-            className={`relative flex items-center gap-2 p-2 sm:p-2.5 rounded-lg transition-all duration-200 text-left cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               roleMode === "staff"
-                ? "bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-sm shadow-orange-500/25 ring-2 ring-orange-500/20 font-semibold"
-                : "bg-white/80 hover:bg-white text-slate-700 hover:text-slate-900 border border-slate-200/60"
+                ? "bg-white text-orange-600 shadow-xs border border-slate-200/60"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <div
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
-                roleMode === "staff" ? "bg-white/20 text-white" : "bg-orange-50 text-orange-600"
-              }`}
-            >
-              <User size={15} />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs sm:text-sm font-bold leading-tight">Staff Login</div>
-              <div
-                className={`text-[10px] truncate leading-tight ${
-                  roleMode === "staff" ? "text-orange-100" : "text-slate-400"
-                }`}
-              >
-                Team members
-              </div>
-            </div>
+            <User size={14} />
+            <span>Staff</span>
           </button>
         </div>
       </div>
 
       {/* Main Authentication Form */}
-      <form onSubmit={onSubmit} className="space-y-2.5">
+      <form onSubmit={onSubmit} className="space-y-3.5">
         {/* Email or Username */}
         <div>
           <label
             htmlFor="login-identifier"
-            className="block text-[11px] font-semibold text-slate-700 mb-1"
+            className="block text-xs font-medium text-slate-700 mb-1"
           >
-            Email Address / Username
+            Email Address
           </label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
@@ -192,7 +264,7 @@ export function LoginForm() {
                   ? "admin@aimhop.com"
                   : "staff@aimhop.com or STAFF-00001"
               }
-              className="w-full rounded-lg border border-slate-200 bg-slate-50/40 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
             />
           </div>
         </div>
@@ -201,7 +273,7 @@ export function LoginForm() {
         <div>
           <label
             htmlFor="login-password"
-            className="block text-[11px] font-semibold text-slate-700 mb-1"
+            className="block text-xs font-medium text-slate-700 mb-1"
           >
             Password
           </label>
@@ -217,12 +289,12 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50/40 py-2 pl-9 pr-9 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-9 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -230,7 +302,7 @@ export function LoginForm() {
           </div>
         </div>
 
-        {/* Options Row: Remember Me & Forgot Password */}
+        {/* Remember Me & Forgot Password */}
         <div className="flex items-center justify-between pt-0.5">
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
             <input
@@ -239,13 +311,13 @@ export function LoginForm() {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500 accent-orange-600"
             />
-            <span className="text-[11px] font-medium text-slate-600">Remember me</span>
+            <span className="text-xs text-slate-600">Remember me</span>
           </label>
 
           <button
             type="button"
-            onClick={() => setForgotModalOpen(true)}
-            className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer"
+            onClick={openForgotModal}
+            className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:underline cursor-pointer"
           >
             Forgot password?
           </button>
@@ -253,16 +325,16 @@ export function LoginForm() {
 
         {/* Inline Feedback Alerts */}
         {error ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-2 text-xs font-medium text-rose-800 flex items-start gap-2">
-            <span className="shrink-0 text-rose-600 font-bold">⚠️</span>
-            <div className="leading-tight text-[11px]">{error}</div>
+          <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-2.5 text-xs text-rose-800 flex items-start gap-2">
+            <span className="shrink-0 font-bold">⚠️</span>
+            <div className="leading-tight">{error}</div>
           </div>
         ) : null}
 
         {success ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/90 p-2 text-xs font-medium text-emerald-800 flex items-center gap-2">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/90 p-2.5 text-xs text-emerald-800 flex items-center gap-2">
             <CheckCircle2 size={14} className="shrink-0 text-emerald-600" />
-            <div className="leading-tight text-[11px]">{success}</div>
+            <div className="leading-tight">{success}</div>
           </div>
         ) : null}
 
@@ -270,12 +342,12 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 py-2.5 px-4 text-xs sm:text-sm font-bold text-white shadow-md shadow-orange-500/25 transition-all duration-200 hover:from-orange-600 hover:to-amber-700 hover:shadow-orange-500/35 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer mt-1"
+          className="w-full rounded-xl bg-orange-600 py-2.5 px-4 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer pt-2"
         >
           {loading ? (
             <>
               <svg
-                className="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-white"
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -294,85 +366,264 @@ export function LoginForm() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
-              <span>Authenticating…</span>
+              <span>Signing in…</span>
             </>
           ) : (
             <>
-              <span>Login</span>
+              <span>Sign In</span>
               <ArrowRight size={14} />
             </>
           )}
         </button>
-
-        {/* Divider */}
-        <div className="relative my-2 flex items-center justify-center">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200/80" />
-          </div>
-          <span className="relative bg-white px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            OR
-          </span>
-        </div>
-
-        {/* Enterprise Security Trust Banner */}
-        <div className="rounded-lg border border-slate-200/80 bg-slate-50/80 p-2 flex items-center gap-2.5">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-orange-100 text-orange-700">
-            <ShieldCheck size={13} />
-          </div>
-          <div className="text-left">
-            <div className="text-[11px] font-bold text-slate-800 leading-tight">Secure Login</div>
-            <div className="text-[10px] text-slate-500 leading-tight">
-              Enterprise-grade encryption and access controls.
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Demo Credentials Bar */}
-        <div className="pt-1 flex items-center justify-between gap-2 text-[10px]">
-          <span className="text-slate-400 font-semibold uppercase tracking-wider shrink-0">
-            Quick Fill:
-          </span>
-          <button
-            type="button"
-            onClick={() => setQuickCredentials("admin", "superadmin@aimhop.com", "Admin@123")}
-            className="px-2 py-1 rounded-md border border-slate-200 bg-white hover:border-orange-300 hover:bg-orange-50/30 text-slate-700 font-medium transition-colors cursor-pointer truncate"
-          >
-            Admin (Super)
-          </button>
-          <button
-            type="button"
-            onClick={() => setQuickCredentials("staff", "staff@aimhop.com", "Staff@123")}
-            className="px-2 py-1 rounded-md border border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30 text-slate-700 font-medium transition-colors cursor-pointer truncate"
-          >
-            Staff Portal
-          </button>
-        </div>
       </form>
 
-      {/* Forgot Password Modal */}
+      {/* Forgot Password Modal - Email OTP Based */}
       {forgotModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fadeIn">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl border border-slate-200">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600 mx-auto mb-3">
-              <Lock size={18} />
-            </div>
-            <h3 className="text-sm font-bold text-slate-900 text-center">
-              Password Reset Assistance
-            </h3>
-            <p className="mt-1.5 text-xs text-slate-600 text-center leading-relaxed">
-              For security compliance, user credentials must be reset by an authorized system administrator.
-            </p>
-            <div className="mt-3 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-600 border border-slate-200/80 text-center">
-              <div className="font-semibold text-slate-800">Support Desk:</div>
-              <div className="font-mono text-slate-500 text-[11px] mt-0.5">admin@aimhop.com</div>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 relative">
+            {/* Close Button */}
             <button
               type="button"
-              onClick={() => setForgotModalOpen(false)}
-              className="mt-4 w-full rounded-xl bg-slate-900 py-2 text-xs font-semibold text-white hover:bg-slate-800 cursor-pointer"
+              onClick={() => {
+                setForgotModalOpen(false);
+                setResetError(null);
+                setResetSuccess(null);
+                setDevOtpNote(null);
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              aria-label="Close modal"
             >
-              Close
+              <X size={18} />
             </button>
+
+            {/* Header */}
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-orange-600 mx-auto mb-3">
+              <Key size={20} />
+            </div>
+            <h3 className="text-base font-bold text-slate-900 text-center">
+              Reset Your Password
+            </h3>
+            <p className="mt-1 text-xs text-slate-500 text-center">
+              {resetStep === 1
+                ? "Enter your registered email to receive a 6-digit verification code."
+                : `Enter the 6-digit code sent to ${resetEmail} and your new password.`}
+            </p>
+
+            {/* Step 1: Send OTP to Email */}
+            {resetStep === 1 && (
+              <form onSubmit={handleRequestOtp} className="mt-5 space-y-4">
+                <div>
+                  <label
+                    htmlFor="reset-email-input"
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                  >
+                    Registered Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                      <Mail size={15} />
+                    </div>
+                    <input
+                      id="reset-email-input"
+                      type="email"
+                      required
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="e.g. admin@aimhop.com or staff@aimhop.com"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+                    />
+                  </div>
+                </div>
+
+                {resetError && (
+                  <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-2.5 text-xs text-rose-800 leading-tight">
+                    {resetError}
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setForgotModalOpen(false)}
+                    className="w-1/3 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetLoading}
+                    className="flex-1 rounded-xl bg-orange-600 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-[0.99] disabled:opacity-60 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {resetLoading ? (
+                      <>
+                        <span className="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full mr-1.5" />
+                        <span>Sending OTP…</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Send Email OTP</span>
+                        <ArrowRight size={14} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Step 2: Enter OTP & New Password */}
+            {resetStep === 2 && (
+              <form onSubmit={handleResetPassword} className="mt-5 space-y-3.5">
+                <div className="flex items-center justify-between text-xs bg-slate-50 border border-slate-200/80 rounded-lg p-2 text-slate-600">
+                  <span className="truncate max-w-[200px]">
+                    To: <strong className="text-slate-800">{resetEmail}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetStep(1);
+                      setResetOtp("");
+                      setResetError(null);
+                      setResetSuccess(null);
+                    }}
+                    className="text-orange-600 hover:underline font-medium cursor-pointer"
+                  >
+                    Change Email
+                  </button>
+                </div>
+
+                {/* Dev Mode OTP Indicator for testing */}
+                {devOtpNote && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 flex items-center justify-between">
+                    <span>
+                      Dev Code: <strong className="font-mono text-sm tracking-wider text-amber-950">{devOtpNote}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setResetOtp(devOtpNote)}
+                      className="text-[11px] bg-amber-200/80 hover:bg-amber-300 px-2 py-0.5 rounded font-semibold cursor-pointer"
+                    >
+                      Auto-fill
+                    </button>
+                  </div>
+                )}
+
+                {/* 6-Digit OTP */}
+                <div>
+                  <label
+                    htmlFor="reset-otp-input"
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                  >
+                    6-Digit Verification Code
+                  </label>
+                  <input
+                    id="reset-otp-input"
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={resetOtp}
+                    onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    className="w-full text-center tracking-widest font-mono text-base font-bold rounded-lg border border-slate-200 bg-slate-50/50 py-2 text-slate-900 placeholder:text-slate-300 placeholder:font-normal placeholder:tracking-normal outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+                  />
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <label
+                    htmlFor="reset-new-password"
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                  >
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                      <Lock size={15} />
+                    </div>
+                    <input
+                      id="reset-new-password"
+                      type={showResetPassword ? "text" : "password"}
+                      required
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 8 characters"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-9 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowResetPassword(!showResetPassword)}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showResetPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label
+                    htmlFor="reset-confirm-password"
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                  >
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                      <Lock size={15} />
+                    </div>
+                    <input
+                      id="reset-confirm-password"
+                      type={showResetPassword ? "text" : "password"}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter new password"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+                    />
+                  </div>
+                </div>
+
+                {resetError && (
+                  <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-2.5 text-xs text-rose-800 leading-tight">
+                    {resetError}
+                  </div>
+                )}
+
+                {resetSuccess && (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/90 p-2.5 text-xs text-emerald-800 flex items-center gap-2">
+                    <CheckCircle2 size={15} className="shrink-0 text-emerald-600" />
+                    <span>{resetSuccess}</span>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleRequestOtp}
+                    disabled={resetLoading}
+                    className="w-1/3 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                  >
+                    Resend Code
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetLoading}
+                    className="flex-1 rounded-xl bg-orange-600 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-[0.99] disabled:opacity-60 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {resetLoading ? (
+                      <>
+                        <span className="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full mr-1.5" />
+                        <span>Updating Password…</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Reset Password</span>
+                        <CheckCircle2 size={14} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

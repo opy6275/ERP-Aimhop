@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #1d4ed8;
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-primary: #2563eb;
   --color-primary-foreground: #ffffff;
-  --color-foreground: #0f172a;
+  --color-foreground: #090d16;
   --color-muted: #64748b;
   --color-muted-foreground: #64748b;
   --color-border: #e2e8f0;
   --color-surface: #ffffff;
   --color-background: #f8fafc;
   --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --color-sidebar: #ffffff;
-  --color-sidebar-foreground: #0f172a;
-  --color-sidebar-border: #e2e8f0;
-  --color-sidebar-primary: #1d4ed8;
+  --color-card-foreground: #090d16;
+  --color-sidebar: #0b1329;
+  --color-sidebar-foreground: #f8fafc;
+  --color-sidebar-border: #1e293b;
+  --color-sidebar-primary: #3b82f6;
   --color-sidebar-primary-foreground: #ffffff;
-  --color-sidebar-accent: #f1f5f9;
-  --color-sidebar-accent-foreground: #0f172a;
+  --color-sidebar-accent: #1e293b;
+  --color-sidebar-accent-foreground: #ffffff;
   --color-success: #059669;
   --color-warning: #d97706;
   --color-danger: #e11d48;
@@ -29,37 +29,74 @@
 :root {
   --radius: 0.75rem;
   --background: #f8fafc;
-  --foreground: #0f172a;
+  --foreground: #090d16;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #090d16;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #1d4ed8;
+  --popover-foreground: #090d16;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
+  --secondary-foreground: #090d16;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
   --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --accent-foreground: #090d16;
   --destructive: #ef4444;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #1d4ed8;
+  --ring: #2563eb;
 }
 
-html { color-scheme: light; }
+html { 
+  color-scheme: light; 
+  scroll-behavior: smooth;
+}
 
 body {
-  background: var(--color-background);
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 100% 0%, rgba(219, 234, 254, 0.4) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(241, 245, 249, 0.6) 0px, transparent 50%);
+  background-attachment: fixed;
   color: var(--color-foreground);
   font-family: var(--font-sans);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* Custom modern scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Subtle Enterprise utilities */
+.glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 4px 14px 0 rgba(15, 23, 42, 0.025);
+}
+
+.glass-card-hover {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+  border-color: rgba(191, 219, 254, 0.9);
+}
+
+.glow-primary {
+  box-shadow: 0 0 20px -3px rgba(37, 99, 235, 0.25);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.25);
+}
 
 @media print {
   @page {
@@ -73,9 +110,9 @@ body {
 
   body {
     background: #ffffff !important;
-    color: #0f172a !important;
+    background-image: none !important;
+    color: #090d16 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 }
-

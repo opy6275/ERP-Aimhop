@@ -31,6 +31,7 @@ export default async function NewPaymentPage() {
           staffCode: s.staffCode,
           fullName: s.fullName,
           salaryAmount: decimalToNumber(s.salaryAmount),
+          email: s.email,
         }))}
       />
     </AppShell>

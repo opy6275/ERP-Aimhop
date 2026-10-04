@@ -41,3 +41,16 @@ test-results/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI & agent tooling / workflows
+.agent/
+.agents/
+.gsd/
+.gemini/
+model_capabilities.yaml
+GSD-STYLE.md
+PROJECT_RULES.md
+adapters/
+
+# Local testing & scratch scripts
+scripts/

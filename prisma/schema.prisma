@@ -144,6 +144,7 @@ model Staff {
   attendance AttendanceRecord[]
   payments   Payment[]
   documents  StaffDocument[]
+  leaves     LeaveRequest[]
 
   @@index([departmentId, status])
   @@map("staff")
@@ -155,10 +156,12 @@ model User {
   passwordHash String    @map("password_hash")
   roleId       String    @map("role_id")
   staffId      String?   @unique @map("staff_id")
-  isActive     Boolean   @default(true) @map("is_active")
-  lastLoginAt  DateTime? @map("last_login_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  isActive        Boolean   @default(true) @map("is_active")
+  lastLoginAt     DateTime? @map("last_login_at")
+  resetOtpHash    String?   @map("reset_otp_hash")
+  resetOtpExpires DateTime? @map("reset_otp_expires")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   role               Role               @relation(fields: [roleId], references: [id])
   staff              Staff?             @relation(fields: [staffId], references: [id])
@@ -166,6 +169,7 @@ model User {
   paymentsCreated    Payment[]          @relation("PaymentCreatedBy")
   attendanceMarked   AttendanceRecord[] @relation("AttendanceMarkedBy")
   documentsUploaded  StaffDocument[]
+  leavesReviewed     LeaveRequest[]     @relation("LeaveReviewedBy")
 
   @@map("users")
 }
@@ -198,6 +202,8 @@ model Payment {
   paymentKind   PaymentKind   @map("payment_kind")
   note          String?
   createdById   String        @map("created_by")
+  emailSentAt   DateTime?     @map("email_sent_at")
+  emailSentTo   String?       @map("email_sent_to")
   createdAt     DateTime      @default(now()) @map("created_at")
 
   staff     Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
@@ -209,23 +215,42 @@ model Payment {
 }
 
 model PaymentReceipt {
-  id             String   @id @default(cuid())
-  receiptNumber  String   @unique @map("receipt_number")
-  paymentId      String   @unique @map("payment_id")
-  companyName    String   @map("company_name")
-  employeeName   String   @map("employee_name")
-  staffCode      String   @map("staff_code")
-  departmentName String   @map("department_name")
-  periodLabel    String   @map("period_label")
-  amountPaid     Decimal  @map("amount_paid")
-  paymentMethod  String   @map("payment_method")
-  authorizedBy   String?  @map("authorized_by")
-  issuedAt       DateTime @default(now()) @map("issued_at")
-  issuedById     String?  @map("issued_by")
+  id             String    @id @default(cuid())
+  receiptNumber  String    @unique @map("receipt_number")
+  paymentId      String    @unique @map("payment_id")
+  companyName    String    @map("company_name")
+  employeeName   String    @map("employee_name")
+  staffCode      String    @map("staff_code")
+  departmentName String    @map("department_name")
+  periodLabel    String    @map("period_label")
+  amountPaid     Decimal   @map("amount_paid")
+  paymentMethod  String    @map("payment_method")
+  authorizedBy   String?   @map("authorized_by")
+  emailSentAt    DateTime? @map("email_sent_at")
+  emailSentTo    String?   @map("email_sent_to")
+  issuedAt       DateTime  @default(now()) @map("issued_at")
+  issuedById     String?   @map("issued_by")
 
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@map("payment_receipts")
+}
+
+model SmtpSetting {
+  id        String   @id @default("default")
+  host      String   @default("smtp.gmail.com")
+  port      Int      @default(465)
+  secure    Boolean  @default(true)
+  user      String   @default("")
+  pass      String   @default("")
+  fromEmail String   @default("") @map("from_email")
+  fromName  String   @default("AimHop ERP Payroll") @map("from_name")
+  replyTo   String?  @default("") @map("reply_to")
+  isEnabled Boolean  @default(true) @map("is_enabled")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("smtp_settings")
 }
 
 model ReceiptSequence {
@@ -265,4 +290,27 @@ model AuditLog {
 
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model LeaveRequest {
+  id           String    @id @default(cuid())
+  staffId      String    @map("staff_id")
+  leaveType    String    @default("casual") @map("leave_type") // casual, sick, paid, unpaid, other
+  startDate    DateTime  @map("start_date")
+  endDate      DateTime  @map("end_date")
+  daysCount    Decimal   @default(1) @map("days_count")
+  reason       String
+  status       String    @default("pending") // pending, approved, rejected, cancelled
+  reviewNote   String?   @map("review_note")
+  reviewedById String?   @map("reviewed_by_id")
+  reviewedAt   DateTime? @map("reviewed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  staff      Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("LeaveReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([staffId, status])
+  @@index([startDate, endDate])
+  @@map("leave_requests")
 }

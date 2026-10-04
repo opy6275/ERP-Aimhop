@@ -37,10 +37,20 @@ export async function GET(request: Request) {
     if (to) where.date.lte = new Date(to);
   }
 
-  const records = await prisma.attendanceRecord.findMany({
-    where,
-    orderBy: { date: "desc" },
-  });
+  const [records, staff, company] = await Promise.all([
+    prisma.attendanceRecord.findMany({
+      where,
+      orderBy: { date: "asc" },
+    }),
+    prisma.staff.findUnique({
+      where: { id: user.staffId },
+      include: {
+        department: { select: { name: true } },
+        category: { select: { name: true } },
+      },
+    }),
+    prisma.company.findFirst(),
+  ]);
 
   const summary = {
     present: 0,
@@ -50,10 +60,50 @@ export async function GET(request: Request) {
     holiday: 0,
   };
   for (const r of records) {
-    summary[r.status] += 1;
+    if (r.status in summary) {
+      summary[r.status as keyof typeof summary] += 1;
+    }
   }
 
-  return apiOk({ records, summary });
+  const [y, m] = month ? month.split("-").map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
+  const totalDays = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const payableDays = summary.present + summary.half_day * 0.5 + summary.leave;
+  const trackedDays = summary.present + summary.absent + summary.half_day + summary.leave + summary.holiday;
+  const presenceRate = trackedDays > 0 ? Math.round(((summary.present + summary.half_day * 0.5) / trackedDays) * 100) : 0;
+
+  const monthLabel = new Intl.DateTimeFormat("en-IN", {
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(Date.UTC(y, m - 1, 1)));
+
+  return apiOk({
+    records,
+    summary: {
+      ...summary,
+      totalDays,
+      payableDays,
+      presenceRate,
+    },
+    month: month || `${y}-${String(m).padStart(2, "0")}`,
+    monthLabel,
+    totalDays,
+    staff: staff
+      ? {
+          fullName: staff.fullName,
+          staffCode: staff.staffCode,
+          department: staff.department.name,
+          designation: staff.designation || staff.category.name,
+          email: staff.email,
+          mobile: staff.mobile,
+        }
+      : null,
+    company: {
+      name: company?.name || "AimHop CRM",
+      legalName: company?.legalName || company?.name || "AimHop Technologies Pvt Ltd",
+      address: company?.address || "Corporate Headquarters, India",
+    },
+  });
 }
 
 export async function POST(request: Request) {

@@ -61,6 +61,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     include: {
       department: { select: { id: true, name: true } },
       category: { select: { id: true, name: true } },
+      user: { select: { id: true, email: true, isActive: true, lastLoginAt: true } },
     },
   });
   if (!staff) return notFound();
@@ -118,6 +119,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
     include: {
       department: { select: { id: true, name: true } },
       category: { select: { id: true, name: true } },
+      user: { select: { id: true, email: true, isActive: true, lastLoginAt: true } },
     },
   });
 
@@ -143,6 +145,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   const existing = await prisma.staff.findUnique({
     where: { id },
     include: {
+      user: true,
       _count: {
         select: { payments: true, attendance: true },
       },
@@ -150,9 +153,11 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   });
   if (!existing) return notFound();
 
-  // If staff has linked transactions, we can perform cascade delete or deactivation
-  // In our schema, payments and attendance cascade on staff delete
-  await prisma.staff.delete({ where: { id } });
+  // Atomically delete linked user credentials and staff profile
+  await prisma.$transaction([
+    prisma.user.deleteMany({ where: { staffId: id } }),
+    prisma.staff.delete({ where: { id } }),
+  ]);
 
   await writeAudit({
     actorUserId: user.id,
@@ -162,5 +167,5 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     targetLabel: `${existing.staffCode} ${existing.fullName}`,
   });
 
-  return apiOk({ success: true, message: "Staff member deleted successfully" });
+  return apiOk({ success: true, message: "Staff member and linked credentials deleted successfully" });
 }

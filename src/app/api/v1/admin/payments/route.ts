@@ -14,6 +14,8 @@ const createSchema = z.object({
   paymentKind: z.enum(["salary", "partial", "advance", "deduction", "adjustment"]),
   note: z.string().optional().nullable(),
   generateReceipt: z.boolean().optional(),
+  sendEmail: z.boolean().optional(),
+  recipientEmail: z.string().email().optional().or(z.literal("")),
 });
 
 export async function GET(request: Request) {
@@ -110,6 +112,16 @@ export async function POST(request: Request) {
     }
   }
 
+  let emailResult = null;
+  if (d.sendEmail) {
+    const { sendSalarySlipEmail } = await import("@/lib/email");
+    emailResult = await sendSalarySlipEmail({
+      paymentId: payment.id,
+      recipientOverride: d.recipientEmail || undefined,
+      actorUserId: user.id,
+    });
+  }
+
   await writeAudit({
     actorUserId: user.id,
     action: "payment.create",
@@ -122,6 +134,7 @@ export async function POST(request: Request) {
     {
       payment: { ...payment, amount: decimalToNumber(payment.amount) },
       receipt,
+      emailResult,
     },
     201,
   );

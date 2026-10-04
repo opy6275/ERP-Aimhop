@@ -9,6 +9,7 @@ import { KpiCard } from "@/components/ui/kpi-card";
 import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate, formatDateWithAge, formatInr, formatMonthLabel } from "@/lib/format";
+import { StaffCredentialsModal } from "@/components/admin/staff-credentials-modal";
 
 export default async function StaffDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { session, roleLabel } = await requirePageSession({ adminOnly: true });
@@ -19,6 +20,14 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
     include: {
       department: true,
       category: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          isActive: true,
+          lastLoginAt: true,
+        },
+      },
       attendance: { orderBy: { date: "desc" }, take: 10 },
       payments: {
         orderBy: { paymentDate: "desc" },
@@ -91,6 +100,13 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <StaffCredentialsModal
+              staffId={staff.id}
+              staffCode={staff.staffCode}
+              staffName={staff.fullName}
+              contactEmail={staff.email}
+              user={staff.user}
+            />
             <Link
               href={`/admin/staff/${staff.id}/edit`}
               className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
@@ -226,6 +242,84 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
         </Panel>
+
+        {/* Portal Login Credentials Panel */}
+        <div className="sm:col-span-2">
+          <Panel
+            title="Portal Login & Access Credentials"
+            description="Manage employee login credentials, password updates, and self-service portal authorization"
+            icon={
+              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            }
+            action={
+              <StaffCredentialsModal
+                staffId={staff.id}
+                staffCode={staff.staffCode}
+                staffName={staff.fullName}
+                contactEmail={staff.email}
+                user={staff.user}
+              />
+            }
+          >
+            {staff.user ? (
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-sm">
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-xs font-medium text-slate-500 block">Login Email Address</span>
+                  <span className="font-semibold text-slate-900 mt-1 block truncate font-mono text-xs">
+                    {staff.user.email}
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-xs font-medium text-slate-500 block">Portal Status</span>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${staff.user.isActive ? "bg-emerald-500" : "bg-rose-500"}`} />
+                    <span className={`text-xs font-bold uppercase tracking-wider ${staff.user.isActive ? "text-emerald-700" : "text-rose-700"}`}>
+                      {staff.user.isActive ? "Active (Can Login)" : "Access Disabled"}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-xs font-medium text-slate-500 block">Access Level</span>
+                  <span className="font-semibold text-slate-800 mt-1 block text-xs">
+                    Staff Portal (Self-Service)
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-xs font-medium text-slate-500 block">Last Active Session</span>
+                  <span className="font-medium text-slate-700 mt-1 block text-xs">
+                    {staff.user.lastLoginAt ? formatDate(staff.user.lastLoginAt) : "Never logged in"}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-amber-50/60 border border-amber-200/80">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-amber-100 text-amber-700">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-amber-900">No Portal Login Configured</h4>
+                    <p className="text-xs text-amber-700 mt-0.5">
+                      This employee cannot sign in to view their attendance, salary receipts or leave requests yet.
+                    </p>
+                  </div>
+                </div>
+
+                <StaffCredentialsModal
+                  staffId={staff.id}
+                  staffCode={staff.staffCode}
+                  staffName={staff.fullName}
+                  contactEmail={staff.email}
+                  user={staff.user}
+                />
+              </div>
+            )}
+          </Panel>
+        </div>
       </div>
 
       {/* Attendance & Payment Ledgers */}

@@ -9,14 +9,49 @@ export function PaymentRowActions({
   receipt,
   amountFormatted,
   employeeName,
+  emailSentAt,
+  emailSentTo,
 }: {
   paymentId: string;
   receipt: ReceiptData | null;
   amountFormatted: string;
   employeeName: string;
+  emailSentAt?: string | null;
+  emailSentTo?: string | null;
 }) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  async function handleSendEmail() {
+    const inputEmail = window.prompt(
+      `Send salary slip of ${amountFormatted} for ${employeeName} to email:`,
+      emailSentTo || "",
+    );
+    if (inputEmail === null) return;
+
+    setSendingEmail(true);
+    try {
+      const res = await fetch(`/api/v1/admin/payments/${paymentId}/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientEmail: inputEmail.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || data.error || "Could not deliver email");
+        return;
+      }
+      alert(`✅ Salary slip successfully sent to ${data.data?.recipient || inputEmail}!`);
+      router.refresh();
+    } catch {
+      alert("Network error while sending email");
+    } finally {
+      setSendingEmail(false);
+    }
+  }
 
   async function handleDelete() {
     const confirmed = window.confirm(
@@ -44,7 +79,34 @@ export function PaymentRowActions({
 
   return (
     <div className="flex items-center gap-1.5 justify-end">
+      {/* Email Salary Slip Button */}
+      <button
+        type="button"
+        disabled={sendingEmail}
+        onClick={handleSendEmail}
+        className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold transition cursor-pointer disabled:opacity-50 ${
+          emailSentAt
+            ? "border-emerald-200 bg-emerald-50/80 text-emerald-700 hover:bg-emerald-100"
+            : "border-blue-200 bg-blue-50/70 text-blue-700 hover:bg-blue-100"
+        }`}
+        title={
+          emailSentAt
+            ? `Emailed on ${emailSentAt} to ${emailSentTo || "employee"}. Click to resend.`
+            : "Send salary slip to employee email"
+        }
+      >
+        {sendingEmail ? (
+          <span className="animate-spin text-xs">↻</span>
+        ) : emailSentAt ? (
+          <span>✓</span>
+        ) : (
+          <span>✉</span>
+        )}
+        <span>{emailSentAt ? "Emailed" : "Email Slip"}</span>
+      </button>
+
       {receipt && <ReceiptModal receipt={receipt} />}
+
       <button
         type="button"
         disabled={deleting}

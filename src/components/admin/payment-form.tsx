@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type StaffOpt = { id: string; staffCode: string; fullName: string; salaryAmount: number };
+type StaffOpt = {
+  id: string;
+  staffCode: string;
+  fullName: string;
+  salaryAmount: number;
+  email?: string | null;
+};
 
 export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
   const router = useRouter();
@@ -18,12 +24,17 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
   const [amount, setAmount] = useState<number>(staff[0]?.salaryAmount || 0);
 
   const selectedStaff = staff.find((s) => s.id === selectedStaffId);
+  const [sendEmail, setSendEmail] = useState(true);
+  const [customEmail, setCustomEmail] = useState(staff[0]?.email || "");
 
   const handleStaffChange = (id: string) => {
     setSelectedStaffId(id);
     const found = staff.find((s) => s.id === id);
     if (found && (!amount || amount === 0 || amount === selectedStaff?.salaryAmount)) {
       setAmount(found.salaryAmount);
+    }
+    if (found) {
+      setCustomEmail(found.email || "");
     }
   };
 
@@ -45,6 +56,8 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
           paymentKind: String(fd.get("paymentKind")),
           note: String(fd.get("note") || "") || null,
           generateReceipt: fd.get("generateReceipt") === "on",
+          sendEmail: sendEmail,
+          recipientEmail: customEmail || undefined,
         }),
       });
       const data = await res.json();
@@ -52,6 +65,17 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
         setError(data.message || data.error || "Could not record payment transaction");
         return;
       }
+
+      if (data.data?.emailResult?.unconfigured) {
+        alert(
+          "Payment recorded successfully! Note: Salary slip was not emailed because Free SMTP is not yet configured. You can set it up anytime under Admin > Settings.",
+        );
+      } else if (data.data?.emailResult?.error) {
+        alert(
+          `Payment recorded, but email delivery issue: ${data.data.emailResult.error}`,
+        );
+      }
+
       router.push("/admin/payments");
       router.refresh();
     } catch {
@@ -239,8 +263,56 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
             type="checkbox"
             name="generateReceipt"
             defaultChecked
-            className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500"
+            className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
           />
+        </div>
+
+        {/* Email Salary Slip Option (100% Free) */}
+        <div className="rounded-xl border border-blue-200/80 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-blue-50/70 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-600 text-white shadow-2xs">
+                <span className="text-base leading-none">✉️</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-slate-900">Email Salary Slip to Employee</p>
+                  <span className="rounded-full bg-emerald-600 px-2 py-0.2 text-[10px] font-bold text-white uppercase tracking-wider">
+                    Free
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600">
+                  Sends full payment voucher &amp; salary particulars directly to staff inbox.
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={sendEmail}
+              onChange={(e) => setSendEmail(e.target.checked)}
+              className="w-5 h-5 rounded-md border-blue-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+          </div>
+
+          {sendEmail && (
+            <div className="pt-2 border-t border-blue-200/60 flex flex-col sm:flex-row sm:items-center gap-2">
+              <label className="text-xs font-semibold text-slate-700 sm:w-36 shrink-0">
+                Recipient Email:
+              </label>
+              <input
+                type="email"
+                value={customEmail}
+                onChange={(e) => setCustomEmail(e.target.value)}
+                placeholder="employee@company.com"
+                className="flex-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              />
+              {!customEmail && (
+                <span className="text-[11px] text-amber-700 font-medium">
+                  ⚠️ No email on profile. Enter email above.
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

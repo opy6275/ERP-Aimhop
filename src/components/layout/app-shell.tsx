@@ -10,6 +10,7 @@ import {
   Building2,
   Tags,
   CalendarCheck,
+  CalendarDays,
   CreditCard,
   Receipt,
   BarChart3,
@@ -24,6 +25,7 @@ type NavItem = {
   href: string;
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
+  badge?: string;
 };
 
 type NavGroup = {
@@ -33,47 +35,49 @@ type NavGroup = {
 
 const ADMIN_NAV: NavGroup[] = [
   {
-    items: [{ href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard }],
+    items: [{ href: "/admin/dashboard", label: "Executive Dashboard", icon: LayoutDashboard }],
   },
   {
     label: "Workforce",
     items: [
-      { href: "/admin/staff", label: "All Staff", icon: Users },
+      { href: "/admin/staff", label: "Staff Roster", icon: Users },
       { href: "/admin/departments", label: "Departments", icon: Building2 },
-      { href: "/admin/categories", label: "Categories", icon: Tags },
+      { href: "/admin/categories", label: "Categories & Roles", icon: Tags },
     ],
   },
   {
     label: "Operations",
     items: [
-      { href: "/admin/attendance", label: "Attendance", icon: CalendarCheck },
-      { href: "/admin/payments", label: "Payments", icon: CreditCard },
-      { href: "/admin/receipts", label: "Receipts", icon: Receipt },
+      { href: "/admin/attendance", label: "Daily Attendance", icon: CalendarCheck },
+      { href: "/admin/leaves", label: "Leave Requests", icon: CalendarDays },
+      { href: "/admin/payments", label: "Disbursements", icon: CreditCard },
+      { href: "/admin/receipts", label: "Payment Receipts", icon: Receipt },
     ],
   },
   {
-    label: "Analytics",
-    items: [{ href: "/admin/reports", label: "Reports", icon: BarChart3 }],
+    label: "Intelligence",
+    items: [{ href: "/admin/reports", label: "Analytics & Reports", icon: BarChart3 }],
   },
   {
-    label: "System",
+    label: "System & Governance",
     items: [
-      { href: "/admin/users", label: "Users", icon: UserIcon },
-      { href: "/admin/audit-logs", label: "Activity Logs", icon: Activity },
-      { href: "/admin/settings", label: "Settings", icon: Settings },
+      { href: "/admin/users", label: "User Access", icon: UserIcon },
+      { href: "/admin/audit-logs", label: "Audit Stream", icon: Activity },
+      { href: "/admin/settings", label: "Company Settings", icon: Settings },
     ],
   },
 ];
 
 const STAFF_NAV: NavGroup[] = [
   {
-    label: "Employee Portal",
+    label: "Employee Self-Service",
     items: [
-      { href: "/app/dashboard", label: "My Dashboard", icon: LayoutDashboard },
+      { href: "/app/dashboard", label: "My Hub", icon: LayoutDashboard },
       { href: "/app/profile", label: "My Profile", icon: UserIcon },
       { href: "/app/attendance", label: "My Attendance", icon: CalendarCheck },
-      { href: "/app/payments", label: "My Payments", icon: CreditCard },
-      { href: "/app/receipts", label: "My Receipts", icon: Receipt },
+      { href: "/app/leaves", label: "Leave Requests", icon: CalendarDays },
+      { href: "/app/payments", label: "Salary & Payouts", icon: CreditCard },
+      { href: "/app/receipts", label: "Salary Slips", icon: Receipt },
     ],
   },
 ];
@@ -96,15 +100,15 @@ function NavLinks({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+    <nav className="flex-1 space-y-6 overflow-y-auto px-3.5 py-5">
       {groups.map((group, gi) => (
-        <div key={gi} className="space-y-1">
+        <div key={gi} className="space-y-1.5">
           {group.label ? (
-            <p className="px-3 text-[10px] font-bold tracking-[0.14em] text-slate-400 uppercase">
+            <p className="px-3 text-[10px] font-bold tracking-[0.16em] text-slate-400 uppercase">
               {group.label}
             </p>
           ) : null}
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {group.items.map((item) => {
               const Icon = item.icon;
               const active =
@@ -119,20 +123,26 @@ function NavLinks({
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all",
+                    "group relative flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150",
                     active
-                      ? "bg-blue-50/90 text-blue-700 shadow-xs font-semibold"
-                      : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900",
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/25 font-semibold"
+                      : "text-slate-300 hover:bg-slate-800/80 hover:text-white",
                   )}
                 >
-                  <Icon
-                    size={18}
-                    className={cn(
-                      "shrink-0 transition-colors",
-                      active ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600",
-                    )}
-                  />
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-3">
+                    <Icon
+                      size={18}
+                      className={cn(
+                        "shrink-0 transition-colors",
+                        active ? "text-white" : "text-slate-400 group-hover:text-slate-200",
+                      )}
+                    />
+                    <span>{item.label}</span>
+                  </div>
+
+                  {active && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-white shadow-xs" />
+                  )}
                 </Link>
               );
             })}
@@ -163,31 +173,33 @@ export function AppShell({ title, email, roleLabel, variant, children }: AppShel
     .join("") || "U";
 
   return (
-    <div className="flex min-h-screen bg-slate-50/60 text-slate-900">
-      {/* Sidebar for Desktop — Fixed/Sticky so it never scrolls with page */}
-      <aside className="hidden w-64 shrink-0 border-r border-slate-200/80 bg-white md:sticky md:top-0 md:flex md:h-screen md:flex-col md:z-40">
+    <div className="flex min-h-screen bg-slate-50/70 text-slate-900">
+      {/* Sidebar for Desktop — Deep Enterprise Obsidian Luxury Style */}
+      <aside className="hidden w-68 shrink-0 border-r border-slate-800/80 bg-[#0c1322] md:sticky md:top-0 md:flex md:h-screen md:flex-col md:z-40 text-slate-200 shadow-xl">
         {/* Brand Header */}
-        <div className="border-b border-slate-100 px-5 py-4">
+        <div className="border-b border-slate-800/90 px-5 py-4.5">
           <Link
             href={variant === "admin" ? "/admin/dashboard" : "/app/dashboard"}
             className="group flex items-center gap-3.5 transition"
           >
-            <img
-              src="/brand-logo.png"
-              alt="AimHop Logo"
-              className="h-12 w-12 shrink-0 object-contain drop-shadow-xs transition-transform duration-200 group-hover:scale-105"
-            />
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-slate-800 p-1 border border-blue-500/30 shadow-md">
+              <img
+                src="/brand-logo.png"
+                alt="AimHop Logo"
+                className="h-9 w-9 object-contain drop-shadow transition-transform duration-200 group-hover:scale-105"
+              />
+            </div>
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-black tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-black tracking-tight text-white group-hover:text-blue-400 transition-colors">
                   AimHop
                 </span>
-                <span className="rounded-md bg-blue-600 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white shadow-2xs">
-                  CRM
+                <span className="rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-xs">
+                  ERP
                 </span>
               </div>
-              <p className="text-[11px] font-medium text-slate-400">
-                {variant === "admin" ? "Management Console" : "Employee Portal"}
+              <p className="text-[11px] font-semibold text-slate-400">
+                {variant === "admin" ? "Enterprise Console" : "Employee Portal"}
               </p>
             </div>
           </Link>
@@ -197,16 +209,16 @@ export function AppShell({ title, email, roleLabel, variant, children }: AppShel
         <NavLinks groups={nav} pathname={pathname} />
 
         {/* User Card at bottom of sidebar */}
-        <div className="border-t border-slate-100 p-3.5">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-slate-900 to-blue-900 font-mono text-xs font-bold text-white shadow-xs">
+        <div className="border-t border-slate-800/90 p-3.5 bg-[#090f1b]/70">
+          <div className="flex items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-900/80 p-2.5 shadow-inner">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 font-mono text-xs font-bold text-white shadow-md">
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-slate-900">{email}</p>
-              <div className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100"></span>
-                <p className="truncate text-[11px] text-slate-500">{roleLabel}</p>
+              <p className="truncate text-xs font-bold text-white">{email}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 ring-2 ring-emerald-950 animate-pulse"></span>
+                <p className="truncate text-[10px] font-medium text-slate-400 uppercase tracking-wider">{roleLabel}</p>
               </div>
             </div>
           </div>
@@ -218,22 +230,22 @@ export function AppShell({ title, email, roleLabel, variant, children }: AppShel
         <div className="fixed inset-0 z-50 md:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
+            className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
             aria-label="Close menu"
             onClick={() => setOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-[#0c1322] text-slate-200 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
               <div className="flex items-center gap-3">
                 <img src="/brand-logo.png" alt="AimHop Logo" className="h-10 w-10 shrink-0 object-contain drop-shadow-xs" />
                 <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold tracking-tight text-slate-900">AimHop</span>
-                  <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[9px] font-bold text-white">CRM</span>
+                  <span className="font-extrabold tracking-tight text-white">AimHop</span>
+                  <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[9px] font-bold text-white">ERP</span>
                 </div>
               </div>
               <button
                 type="button"
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
                 onClick={() => setOpen(false)}
               >
                 ✕
@@ -247,7 +259,7 @@ export function AppShell({ title, email, roleLabel, variant, children }: AppShel
       {/* Main Content View */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Sticky Header with SearchCommand */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-md sm:px-8">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-md sm:px-8 shadow-xs">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -257,29 +269,24 @@ export function AppShell({ title, email, roleLabel, variant, children }: AppShel
             >
               ☰
             </button>
-            <div>
-              <span className="text-xs font-medium text-slate-400 hidden sm:inline">Portal / </span>
-              <span className="text-sm font-semibold tracking-tight text-slate-800 sm:text-base">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-400 hidden sm:inline uppercase tracking-wider">
+                {variant === "admin" ? "Management" : "Staff"} /
+              </span>
+              <span className="text-sm font-bold tracking-tight text-slate-900 sm:text-base">
                 {title}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3.5">
             {/* Quick search command button */}
             <SearchCommand variant={variant} />
-
-            <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50/80 px-3 py-1 text-xs text-slate-600 lg:flex">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="font-medium">Operational</span>
-              <span className="text-slate-300">|</span>
-              <span className="text-slate-500">Asia/Kolkata</span>
-            </div>
 
             <button
               type="button"
               onClick={logout}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 active:scale-95 cursor-pointer"
             >
               <LogOut size={14} />
               <span className="hidden sm:inline">Sign out</span>
