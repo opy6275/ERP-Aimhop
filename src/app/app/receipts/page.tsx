@@ -62,7 +62,7 @@ export default async function StaffReceiptsPage() {
                     receipt={{
                       id: r.id,
                       receiptNumber: r.receiptNumber,
-                      companyName: "AimHop CRM",
+                      companyName: "AimHop ERP",
                       employeeName: r.payment.staff.fullName,
                       staffCode: r.payment.staff.staffCode,
                       departmentName: r.payment.staff.department.name,

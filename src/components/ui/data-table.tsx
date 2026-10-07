@@ -15,23 +15,23 @@ export function DataTable({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.03),0_4px_12px_rgba(15,23,42,0.02)]",
+        "overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs",
         className,
       )}
     >
       <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm">
           {caption ? <caption className="sr-only">{caption}</caption> : null}
-          <thead className="border-b border-slate-100 bg-slate-50/90 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+          <thead className="border-b border-slate-200/80 bg-slate-50/70 text-xs font-semibold tracking-wider text-slate-600 uppercase">
             <tr>
               {headers.map((h, i) => (
-                <th key={i} className="px-5 py-3.5 whitespace-nowrap">
+                <th key={i} className="px-4 py-3 sm:px-5 sm:py-3.5 whitespace-nowrap font-medium text-slate-600">
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100/90 bg-white font-normal text-slate-800">
+          <tbody className="divide-y divide-slate-100 bg-white font-normal text-slate-800">
             {children}
           </tbody>
         </table>
@@ -54,7 +54,7 @@ export function Td({
   return (
     <td
       className={cn(
-        "px-5 py-3.5 text-sm text-slate-700 whitespace-nowrap transition-colors",
+        "px-4 py-3 sm:px-5 sm:py-3.5 text-sm text-slate-700 whitespace-nowrap transition-colors",
         mono && "font-mono tabular-nums",
         align === "center" && "text-center",
         align === "right" && "text-right",

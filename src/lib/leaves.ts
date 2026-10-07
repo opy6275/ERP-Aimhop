@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
-import { toDateOnlyUtc } from "@/lib/format";
+import { toDateOnlyUtc, decimalToNumber } from "@/lib/format";
 
 export type LeaveType = "casual" | "sick" | "paid" | "unpaid" | "other";
 export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
@@ -25,21 +25,70 @@ export interface LeaveRecord {
   reviewerEmail?: string;
 }
 
+type LeaveWithRelations = {
+  id: string;
+  staffId: string;
+  leaveType: string;
+  startDate: Date;
+  endDate: Date;
+  daysCount: unknown;
+  reason: string;
+  status: string;
+  reviewNote: string | null;
+  reviewedById: string | null;
+  reviewedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  staff?: {
+    staffCode: string;
+    fullName: string;
+    department?: { name: string } | null;
+  } | null;
+  reviewedBy?: { email: string } | null;
+};
+
+function formatLeaveRecord(r: LeaveWithRelations): LeaveRecord {
+  return {
+    id: r.id,
+    staffId: r.staffId,
+    leaveType: r.leaveType as LeaveType,
+    startDate: r.startDate.toISOString(),
+    endDate: r.endDate.toISOString(),
+    daysCount: decimalToNumber(r.daysCount as { toString(): string } | number),
+    reason: r.reason,
+    status: r.status as LeaveStatus,
+    reviewNote: r.reviewNote,
+    reviewedById: r.reviewedById,
+    reviewedAt: r.reviewedAt?.toISOString() || null,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    staffCode: r.staff?.staffCode,
+    staffName: r.staff?.fullName,
+    departmentName: r.staff?.department?.name,
+    reviewerEmail: r.reviewedBy?.email,
+  };
+}
+
 /**
  * Get all leave requests for a specific staff member
  */
 export async function getStaffLeaveRequests(staffId: string): Promise<LeaveRecord[]> {
-  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
-    `SELECT lr.*, s.staff_code as staffCode, s.full_name as staffName, d.name as departmentName
-     FROM leave_requests lr
-     JOIN staff s ON s.id = lr.staff_id
-     LEFT JOIN departments d ON d.id = s.department_id
-     WHERE lr.staff_id = ?
-     ORDER BY lr.created_at DESC`,
-    staffId
-  );
+  const rows = await prisma.leaveRequest.findMany({
+    where: { staffId },
+    include: {
+      staff: {
+        select: {
+          staffCode: true,
+          fullName: true,
+          department: { select: { name: true } },
+        },
+      },
+      reviewedBy: { select: { email: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-  return rows.map(mapLeaveRow);
+  return rows.map(formatLeaveRecord);
 }
 
 /**
@@ -53,48 +102,74 @@ export async function createLeaveRequest(params: {
   daysCount: number;
   reason: string;
 }): Promise<LeaveRecord> {
-  const id = `leave_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const now = new Date().toISOString();
-  const startIso = toDateOnlyUtc(params.startDate).toISOString();
-  const endIso = toDateOnlyUtc(params.endDate).toISOString();
+  const s = toDateOnlyUtc(params.startDate);
+  const e = toDateOnlyUtc(params.endDate);
 
-  await prisma.$executeRawUnsafe(
-    `INSERT INTO leave_requests (id, staff_id, leave_type, start_date, end_date, days_count, reason, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-    id,
-    params.staffId,
-    params.leaveType,
-    startIso,
-    endIso,
-    params.daysCount,
-    params.reason.trim(),
-    now,
-    now
-  );
-
-  const created = await getLeaveRequestById(id);
-  if (!created) {
-    throw new Error("Failed to create leave request");
+  if (s > e) {
+    throw new Error("Leave start date cannot be after end date.");
   }
-  return created;
+
+  // Prevent overlapping pending or approved leave requests for the same staff member
+  const overlapping = await prisma.leaveRequest.findFirst({
+    where: {
+      staffId: params.staffId,
+      status: { in: ["pending", "approved"] },
+      startDate: { lte: e },
+      endDate: { gte: s },
+    },
+  });
+
+  if (overlapping) {
+    throw new Error(
+      `You already have an active leave request (${overlapping.status}) overlapping with these dates.`,
+    );
+  }
+
+  const created = await prisma.leaveRequest.create({
+    data: {
+      staffId: params.staffId,
+      leaveType: params.leaveType,
+      startDate: s,
+      endDate: e,
+      daysCount: params.daysCount,
+      reason: params.reason.trim(),
+      status: "pending",
+    },
+    include: {
+      staff: {
+        select: {
+          staffCode: true,
+          fullName: true,
+          department: { select: { name: true } },
+        },
+      },
+      reviewedBy: { select: { email: true } },
+    },
+  });
+
+  return formatLeaveRecord(created);
 }
 
 /**
  * Get a single leave request by ID
  */
 export async function getLeaveRequestById(id: string): Promise<LeaveRecord | null> {
-  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(
-    `SELECT lr.*, s.staff_code as staffCode, s.full_name as staffName, d.name as departmentName, u.email as reviewerEmail
-     FROM leave_requests lr
-     JOIN staff s ON s.id = lr.staff_id
-     LEFT JOIN departments d ON d.id = s.department_id
-     LEFT JOIN users u ON u.id = lr.reviewed_by_id
-     WHERE lr.id = ? LIMIT 1`,
-    id
-  );
+  const row = await prisma.leaveRequest.findUnique({
+    where: { id },
+    include: {
+      staff: {
+        select: {
+          staffCode: true,
+          fullName: true,
+          department: { select: { name: true } },
+        },
+      },
+      reviewedBy: { select: { email: true } },
+    },
+  });
 
-  if (!rows || rows.length === 0) return null;
-  return mapLeaveRow(rows[0]);
+  if (!row) return null;
+  return formatLeaveRecord(row);
 }
 
 /**
@@ -105,36 +180,41 @@ export async function getAllLeaveRequests(filters?: {
   departmentId?: string;
   search?: string;
 }): Promise<LeaveRecord[]> {
-  let query = `
-    SELECT lr.*, s.staff_code as staffCode, s.full_name as staffName, d.name as departmentName, u.email as reviewerEmail
-    FROM leave_requests lr
-    JOIN staff s ON s.id = lr.staff_id
-    LEFT JOIN departments d ON d.id = s.department_id
-    LEFT JOIN users u ON u.id = lr.reviewed_by_id
-    WHERE 1=1
-  `;
-  const params: unknown[] = [];
+  const where: Record<string, unknown> = {};
 
   if (filters?.status && filters.status !== "all") {
-    query += ` AND lr.status = ?`;
-    params.push(filters.status);
+    where.status = filters.status;
   }
 
   if (filters?.departmentId && filters.departmentId !== "all") {
-    query += ` AND s.department_id = ?`;
-    params.push(filters.departmentId);
+    where.staff = { departmentId: filters.departmentId };
   }
 
   if (filters?.search && filters.search.trim()) {
-    const q = `%${filters.search.trim().toLowerCase()}%`;
-    query += ` AND (LOWER(s.full_name) LIKE ? OR LOWER(s.staff_code) LIKE ? OR LOWER(lr.reason) LIKE ?)`;
-    params.push(q, q, q);
+    const q = filters.search.trim();
+    where.OR = [
+      { reason: { contains: q } },
+      { staff: { fullName: { contains: q } } },
+      { staff: { staffCode: { contains: q } } },
+    ];
   }
 
-  query += ` ORDER BY lr.created_at DESC`;
+  const rows = await prisma.leaveRequest.findMany({
+    where,
+    include: {
+      staff: {
+        select: {
+          staffCode: true,
+          fullName: true,
+          department: { select: { name: true } },
+        },
+      },
+      reviewedBy: { select: { email: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-  const rows = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(query, ...params);
-  return rows.map(mapLeaveRow);
+  return rows.map(formatLeaveRecord);
 }
 
 /**
@@ -156,21 +236,28 @@ export async function reviewLeaveRequest(params: {
     throw new Error(`Cannot review leave request that is already ${leave.status}`);
   }
 
-  const reviewedAt = new Date().toISOString();
   const note = params.reviewNote?.trim() || null;
 
   // 1. Update leave request record
-  await prisma.$executeRawUnsafe(
-    `UPDATE leave_requests
-     SET status = ?, review_note = ?, reviewed_by_id = ?, reviewed_at = ?, updated_at = ?
-     WHERE id = ?`,
-    params.status,
-    note,
-    params.reviewerUserId,
-    reviewedAt,
-    reviewedAt,
-    params.leaveId
-  );
+  const updated = await prisma.leaveRequest.update({
+    where: { id: params.leaveId },
+    data: {
+      status: params.status,
+      reviewNote: note,
+      reviewedById: params.reviewerUserId,
+      reviewedAt: new Date(),
+    },
+    include: {
+      staff: {
+        select: {
+          staffCode: true,
+          fullName: true,
+          department: { select: { name: true } },
+        },
+      },
+      reviewedBy: { select: { email: true } },
+    },
+  });
 
   // 2. If approved, automatically sync attendance records for the entire range
   if (params.status === "approved") {
@@ -191,6 +278,7 @@ export async function reviewLeaveRequest(params: {
           where: { id: existing.id },
           data: {
             status: "leave",
+            approvalStatus: "approved",
             note: `Approved leave: ${leave.reason.slice(0, 80)}`,
             markedById: params.reviewerUserId,
           },
@@ -201,13 +289,14 @@ export async function reviewLeaveRequest(params: {
             staffId: leave.staffId,
             date: dayDate,
             status: "leave",
+            approvalStatus: "approved",
             note: `Approved leave: ${leave.reason.slice(0, 80)}`,
             markedById: params.reviewerUserId,
           },
         });
       }
 
-      cur.setDate(cur.getDate() + 1);
+      cur.setUTCDate(cur.getUTCDate() + 1);
     }
   }
 
@@ -226,28 +315,5 @@ export async function reviewLeaveRequest(params: {
     },
   });
 
-  const updated = await getLeaveRequestById(params.leaveId);
-  return updated!;
-}
-
-function mapLeaveRow(r: Record<string, unknown>): LeaveRecord {
-  return {
-    id: String(r.id),
-    staffId: String(r.staff_id),
-    leaveType: String(r.leave_type) as LeaveType,
-    startDate: r.start_date instanceof Date ? r.start_date.toISOString() : String(r.start_date),
-    endDate: r.end_date instanceof Date ? r.end_date.toISOString() : String(r.end_date),
-    daysCount: Number(r.days_count),
-    reason: String(r.reason),
-    status: String(r.status) as LeaveStatus,
-    reviewNote: r.review_note ? String(r.review_note) : null,
-    reviewedById: r.reviewed_by_id ? String(r.reviewed_by_id) : null,
-    reviewedAt: r.reviewed_at ? (r.reviewed_at instanceof Date ? r.reviewed_at.toISOString() : String(r.reviewed_at)) : null,
-    createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
-    updatedAt: r.updated_at instanceof Date ? r.updated_at.toISOString() : String(r.updated_at),
-    staffCode: r.staffCode ? String(r.staffCode) : undefined,
-    staffName: r.staffName ? String(r.staffName) : undefined,
-    departmentName: r.departmentName ? String(r.departmentName) : undefined,
-    reviewerEmail: r.reviewerEmail ? String(r.reviewerEmail) : undefined,
-  };
+  return formatLeaveRecord(updated);
 }

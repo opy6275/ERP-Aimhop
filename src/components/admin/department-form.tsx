@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Plus } from "@/components/ui/icons";
 
+import { Button } from "@/components/ui/button";
+
 export function DepartmentForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -26,6 +28,7 @@ export function DepartmentForm() {
           status: "active",
         }),
       });
+
       const data = await res.json();
       if (!res.ok) {
         setError(data.message || "Failed to create department");
@@ -42,67 +45,67 @@ export function DepartmentForm() {
 
   if (!open) {
     return (
-      <button
+      <Button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 cursor-pointer"
       >
         <Plus size={16} />
         <span>Add department</span>
-      </button>
+      </Button>
     );
   }
 
   const field =
-    "mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100";
+    "mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20";
 
   return (
     <form
       onSubmit={onSubmit}
-      className="w-full max-w-lg space-y-4 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs"
+      className="w-full max-w-lg space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-xs"
     >
       <div className="border-b border-slate-100 pb-3">
-        <h4 className="text-base font-bold text-slate-900">Create New Department</h4>
-        <p className="text-xs text-slate-500">Add an operational division or business team</p>
+        <h4 className="text-base font-bold text-slate-900">New Department</h4>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="sm:col-span-1">
-          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Code</label>
-          <input name="code" className={field} placeholder="e.g. ENG" />
+          <label className="text-xs font-semibold text-slate-700">Code</label>
+          <input name="code" className={field} placeholder="ENG" />
         </div>
         <div className="sm:col-span-2">
-          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Name *</label>
-          <input name="name" required className={field} placeholder="e.g. Engineering" />
+          <label className="text-xs font-semibold text-slate-700">Name *</label>
+          <input name="name" required className={field} placeholder="Department name" />
         </div>
       </div>
 
       <div>
-        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Description</label>
-        <input name="description" className={field} placeholder="Brief department description" />
+        <label className="text-xs font-semibold text-slate-700">Description</label>
+        <input name="description" className={field} placeholder="Description (optional)" />
       </div>
 
       {error ? (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
           {error}
         </p>
       ) : null}
 
       <div className="flex items-center gap-2 pt-2">
-        <button
+        <Button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
+          loading={loading}
+          size="sm"
         >
-          {loading ? "Creating…" : "Save department"}
-        </button>
-        <button
+          Save department
+        </Button>
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => setOpen(false)}
-          className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

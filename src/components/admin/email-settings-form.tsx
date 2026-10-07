@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, CheckCircle2, Lock } from "@/components/ui/icons";
+import { CheckCircle2, AlertCircle, Send, Check } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 
 export type SmtpFormProps = {
   initialConfig: {
@@ -101,7 +102,10 @@ export function EmailSettingsForm({ initialConfig }: SmtpFormProps) {
 
   async function handleTest() {
     if (!testEmail || !testEmail.includes("@")) {
-      alert("Please enter a valid email address to receive the test message.");
+      setTestResult({
+        success: false,
+        message: "Please enter a valid email address to receive the test message.",
+      });
       return;
     }
 
@@ -138,7 +142,7 @@ export function EmailSettingsForm({ initialConfig }: SmtpFormProps) {
   }
 
   const inputClass =
-    "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15";
+    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20";
   const labelClass = "block text-xs font-semibold text-slate-700 mb-1";
 
   return (
@@ -166,7 +170,7 @@ export function EmailSettingsForm({ initialConfig }: SmtpFormProps) {
                 onClick={() => applyPreset(preset.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border ${
                   isSelected
-                    ? "bg-slate-900 text-white border-slate-900 shadow-2xs"
+                    ? "bg-blue-50 text-blue-700 border-blue-300 shadow-2xs"
                     : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                 }`}
               >
@@ -205,12 +209,12 @@ export function EmailSettingsForm({ initialConfig }: SmtpFormProps) {
               />
             </div>
             <div className="flex flex-col justify-end">
-              <label className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer">
+              <label className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={secure}
                   onChange={(e) => setSecure(e.target.checked)}
-                  className="rounded text-orange-600 focus:ring-orange-500 accent-orange-600"
+                  className="rounded text-blue-600 focus:ring-blue-500 accent-blue-600 cursor-pointer"
                 />
                 <span>SSL / TLS</span>
               </label>
@@ -227,14 +231,14 @@ export function EmailSettingsForm({ initialConfig }: SmtpFormProps) {
                 setUser(e.target.value);
                 if (!fromEmail || fromEmail === user) setFromEmail(e.target.value);
               }}
-              placeholder="accounts@aimhop.com"
+              placeholder="smtp-user@company.com"
               className={inputClass}
             />
           </div>
 
           <div>
             <label className={labelClass}>
-              Password / App Password {initialConfig?.hasPassword ? "(Saved ✓)" : "*"}
+              Password / App Password {initialConfig?.hasPassword ? "(Configured)" : "*"}
             </label>
             <input
               type="password"
@@ -255,7 +259,7 @@ export function EmailSettingsForm({ initialConfig }: SmtpFormProps) {
               type="text"
               value={fromName}
               onChange={(e) => setFromName(e.target.value)}
-              placeholder="AimHop ERP"
+              placeholder="Enterprise ERP"
               className={inputClass}
             />
           </div>
@@ -266,7 +270,7 @@ export function EmailSettingsForm({ initialConfig }: SmtpFormProps) {
               type="email"
               value={fromEmail}
               onChange={(e) => setFromEmail(e.target.value)}
-              placeholder="accounts@aimhop.com"
+              placeholder="noreply@company.com"
               className={inputClass}
             />
           </div>
@@ -278,30 +282,32 @@ export function EmailSettingsForm({ initialConfig }: SmtpFormProps) {
               type="checkbox"
               checked={isEnabled}
               onChange={(e) => setIsEnabled(e.target.checked)}
-              className="rounded text-orange-600 focus:ring-orange-500 accent-orange-600"
+              className="rounded text-blue-600 focus:ring-blue-500 accent-blue-600 cursor-pointer"
             />
             <span>Enable Automated Email Delivery</span>
           </label>
 
-          <button
+          <Button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-orange-700 transition cursor-pointer disabled:opacity-60"
+            loading={saving}
+            size="sm"
           >
-            {saving ? "Saving…" : "Save Configuration"}
-          </button>
+            <Check size={14} />
+            <span>Save Configuration</span>
+          </Button>
         </div>
 
         {saveSuccess && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
             <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
             <span>Settings saved successfully!</span>
           </div>
         )}
 
         {saveError && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800 flex items-center gap-2">
-            <span className="shrink-0 font-bold">✕</span>
+          <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800 flex items-center gap-2">
+            <AlertCircle size={16} className="text-rose-600 shrink-0" />
             <span>{saveError}</span>
           </div>
         )}
@@ -322,16 +328,19 @@ export function EmailSettingsForm({ initialConfig }: SmtpFormProps) {
             value={testEmail}
             onChange={(e) => setTestEmail(e.target.value)}
             placeholder="Recipient email address..."
-            className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15"
+            className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20"
           />
-          <button
+          <Button
             type="button"
             onClick={handleTest}
             disabled={testing}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-slate-800 transition cursor-pointer disabled:opacity-60"
+            loading={testing}
+            variant="outline"
+            size="sm"
           >
-            {testing ? "Testing…" : "Send Test"}
-          </button>
+            <Send size={14} />
+            <span>Send Test</span>
+          </Button>
         </div>
 
         {testResult && (

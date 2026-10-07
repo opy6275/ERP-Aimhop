@@ -58,18 +58,26 @@ export async function GET(request: Request) {
     leave: 0,
     half_day: 0,
     holiday: 0,
+    pending: 0,
   };
   for (const r of records) {
-    if (r.status in summary) {
-      summary[r.status as keyof typeof summary] += 1;
+    if (r.approvalStatus === "pending") {
+      summary.pending += 1;
+    } else if (r.approvalStatus === "approved" || !r.approvalStatus) {
+      if (r.status in summary) {
+        summary[r.status as keyof typeof summary] += 1;
+      }
     }
   }
 
   const [y, m] = month ? month.split("-").map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
   const totalDays = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const payableDays = summary.present + summary.half_day * 0.5 + summary.leave;
+  const attendedDays = summary.present + summary.half_day * 0.5;
+  const payableDays = attendedDays + summary.leave;
   const trackedDays = summary.present + summary.absent + summary.half_day + summary.leave + summary.holiday;
-  const presenceRate = trackedDays > 0 ? Math.round(((summary.present + summary.half_day * 0.5) / trackedDays) * 100) : 0;
+  // Calculate attendance % based on actual calendar days of the month (e.g. 28/29 for Feb, 30 for April, 31 for Oct)
+  const monthlyPercentage = totalDays > 0 ? Math.round((attendedDays / totalDays) * 1000) / 10 : 0;
+  const trackedPresenceRate = trackedDays > 0 ? Math.round((attendedDays / trackedDays) * 1000) / 10 : 0;
 
   const monthLabel = new Intl.DateTimeFormat("en-IN", {
     month: "long",
@@ -82,8 +90,12 @@ export async function GET(request: Request) {
     summary: {
       ...summary,
       totalDays,
+      attendedDays,
       payableDays,
-      presenceRate,
+      trackedDays,
+      monthlyPercentage,
+      presenceRate: monthlyPercentage,
+      trackedPresenceRate,
     },
     month: month || `${y}-${String(m).padStart(2, "0")}`,
     monthLabel,
@@ -99,7 +111,7 @@ export async function GET(request: Request) {
         }
       : null,
     company: {
-      name: company?.name || "AimHop CRM",
+      name: company?.name || "AimHop ERP",
       legalName: company?.legalName || company?.name || "AimHop Technologies Pvt Ltd",
       address: company?.address || "Corporate Headquarters, India",
     },
@@ -123,6 +135,7 @@ export async function POST(request: Request) {
     where: { staffId_date: { staffId: user.staffId, date: today } },
     update: {
       status,
+      approvalStatus: "pending",
       note: note || undefined,
       markedById: user.id,
     },
@@ -130,6 +143,7 @@ export async function POST(request: Request) {
       staffId: user.staffId,
       date: today,
       status,
+      approvalStatus: "pending",
       note: note || null,
       markedById: user.id,
     },
@@ -137,14 +151,14 @@ export async function POST(request: Request) {
 
   await writeAudit({
     actorUserId: user.id,
-    action: "attendance.checkin",
+    action: "attendance.checkin_request",
     entityType: "attendance",
     entityId: record.id,
-    targetLabel: `Self check-in (${status.toUpperCase()}) for ${today.toISOString().slice(0, 10)}`,
+    targetLabel: `Self check-in request (${status.toUpperCase()}) submitted for admin approval on ${today.toISOString().slice(0, 10)}`,
   });
 
   return apiOk({
     record,
-    message: `Attendance marked as ${status.toUpperCase()} for today!`,
+    message: `Attendance request submitted (${status.toUpperCase().replace("_", " ")}). Awaiting Admin Approval.`,
   });
 }

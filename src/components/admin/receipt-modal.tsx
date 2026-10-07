@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Receipt, Printer } from "@/components/ui/icons";
+import Image from "next/image";
+import { Receipt, Printer, X, Mail } from "@/components/ui/icons";
 import { formatInr } from "@/lib/format";
+import { Button } from "@/components/ui/button";
 
 export type ReceiptData = {
   id: string;
@@ -21,14 +23,16 @@ export type ReceiptData = {
 export function ReceiptModal({ receipt }: { receipt: ReceiptData }) {
   const [open, setOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState("");
   const [emailFeedback, setEmailFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  async function handleSendEmail() {
-    const inputEmail = window.prompt(
-      `Send official salary slip for ${receipt.employeeName} (${receipt.receiptNumber}) to email:`,
-      "",
-    );
-    if (inputEmail === null) return; // user cancelled prompt
+  async function handleSendEmail(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (!recipientEmail.trim() || !recipientEmail.includes("@")) {
+      setEmailFeedback({ type: "error", text: "Please enter a valid email address." });
+      return;
+    }
 
     setSendingEmail(true);
     setEmailFeedback(null);
@@ -38,7 +42,7 @@ export function ReceiptModal({ receipt }: { receipt: ReceiptData }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recipientEmail: inputEmail.trim() || undefined,
+          recipientEmail: recipientEmail.trim() || undefined,
         }),
       });
 
@@ -51,8 +55,11 @@ export function ReceiptModal({ receipt }: { receipt: ReceiptData }) {
       } else {
         setEmailFeedback({
           type: "success",
-          text: data.message || `Salary slip delivered to ${data.data?.recipient || "employee email"}!`,
+          text: data.message || `Salary slip delivered to ${data.data?.recipient || recipientEmail}!`,
         });
+        setTimeout(() => {
+          setShowEmailInput(false);
+        }, 1500);
       }
     } catch {
       setEmailFeedback({
@@ -140,7 +147,6 @@ ${receiptEl.outerHTML}
       setTimeout(() => {
         frame.contentWindow?.focus();
         frame.contentWindow?.print();
-        // Cleanup after print dialog closes
         setTimeout(() => {
           try { document.body.removeChild(frame); } catch { /* already removed */ }
         }, 2000);
@@ -150,18 +156,20 @@ ${receiptEl.outerHTML}
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+        className="h-7 px-2.5 text-xs text-slate-700 hover:text-blue-700 hover:border-blue-200 hover:bg-blue-50"
         aria-label="View Receipt"
       >
-        <Receipt size={12} />
+        <Receipt size={12} className="text-slate-500" />
         <span>Receipt</span>
-      </button>
+      </Button>
 
       {open && (
-        <div className="print-receipt-overlay fixed inset-0 z-50 flex items-center justify-center p-4 print:static print:p-0 print:m-0 print:block">
+        <div className="print-receipt-overlay fixed inset-0 z-50 flex items-center justify-center p-4 print:static print:p-0 print:m-0 print:block animate-in fade-in">
           {/* Modal Backdrop - hidden on print */}
           <div
             className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity no-print print:hidden"
@@ -169,24 +177,25 @@ ${receiptEl.outerHTML}
           />
 
           {/* Modal / Printable Receipt Container */}
-          <div className="print-receipt-card relative z-10 w-full max-w-lg max-h-[90dvh] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl print:max-w-none print:max-h-none print:w-full print:border-none print:shadow-none print:rounded-none">
+          <div className="print-receipt-card relative z-10 w-full max-w-lg max-h-[90dvh] flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl print:max-w-none print:max-h-none print:w-full print:border-none print:shadow-none print:rounded-none">
             {/* Modal Screen Header - hidden on print */}
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-4 no-print print:hidden">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3 sm:px-6 sm:py-3.5 no-print print:hidden">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
                   <Receipt size={16} />
                 </div>
                 <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">Payment Receipt</h3>
-                  <p className="font-mono text-[10px] sm:text-xs text-slate-500">{receipt.receiptNumber}</p>
+                  <h3 className="text-sm font-semibold text-slate-900">Payment Receipt</h3>
+                  <p className="font-mono text-xs text-slate-500">{receipt.receiptNumber}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 cursor-pointer"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 cursor-pointer"
+                aria-label="Close modal"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
@@ -194,52 +203,54 @@ ${receiptEl.outerHTML}
             <div className="printable-receipt flex-1 overflow-y-auto p-4 space-y-4 sm:p-6 sm:space-y-5 print:p-4 print:space-y-3 print:overflow-visible bg-white">
               {/* Header with Official AimHop Logo */}
               <div className="border-b-2 border-slate-900 pb-3 sm:pb-5 print:pb-2 text-center flex flex-col items-center">
-                <img
+                <Image
                   src="/brand-logo.png"
                   alt="AimHop Logo"
-                  className="mb-1.5 sm:mb-2 h-12 w-12 sm:h-16 sm:w-16 object-contain select-none print:h-14 print:w-14 print:mb-1 print:block"
+                  width={64}
+                  height={64}
+                  className="mb-1.5 sm:mb-2 h-12 w-12 sm:h-14 sm:w-14 object-contain select-none print:h-14 print:w-14 print:mb-1 print:block"
                 />
-                <h2 className="text-base sm:text-xl print:text-lg font-extrabold uppercase tracking-tight text-slate-950">
-                  {receipt.companyName || "AimHop CRM"}
+                <h2 className="text-base sm:text-xl print:text-lg font-bold uppercase tracking-tight text-slate-950">
+                  {receipt.companyName || "AimHop ERP"}
                 </h2>
                 <p className="text-[10px] sm:text-xs font-semibold tracking-widest text-slate-600 uppercase mt-0.5">
                   Official Salary Disbursement Receipt
                 </p>
-                <div className="mt-1.5 sm:mt-2 inline-flex items-center gap-1.5 sm:gap-2 rounded-md border border-slate-200 px-2 sm:px-3 py-0.5 sm:py-1 bg-slate-50 font-mono text-[10px] sm:text-xs font-bold text-slate-800">
+                <div className="mt-1.5 sm:mt-2 inline-flex items-center gap-1.5 sm:gap-2 rounded-md border border-slate-200 px-2 sm:px-3 py-0.5 sm:py-1 bg-slate-50 font-mono text-[10px] sm:text-xs font-semibold text-slate-800">
                   <span>RECEIPT NO:</span>
                   <span className="text-blue-700">{receipt.receiptNumber}</span>
                 </div>
               </div>
 
               {/* Employee & Payment Metadata Grid */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4 print:p-3 print:bg-white print:border-slate-300 print:rounded-lg">
+              <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:p-4 print:p-3 print:bg-white print:border-slate-300 print:rounded-lg">
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs">
                   <div>
                     <span className="text-slate-400 uppercase font-semibold text-[9px] sm:text-[10px] tracking-wider block">Employee Name</span>
-                    <p className="font-bold text-slate-900 text-xs sm:text-sm mt-0.5 break-words">{receipt.employeeName}</p>
+                    <p className="font-semibold text-slate-900 text-xs sm:text-sm mt-0.5 break-words">{receipt.employeeName}</p>
                   </div>
                   <div>
                     <span className="text-slate-400 uppercase font-semibold text-[9px] sm:text-[10px] tracking-wider block">Staff Code</span>
-                    <p className="font-mono font-bold text-slate-900 text-xs sm:text-sm mt-0.5">{receipt.staffCode}</p>
+                    <p className="font-mono font-semibold text-slate-900 text-xs sm:text-sm mt-0.5">{receipt.staffCode}</p>
                   </div>
                   <div>
                     <span className="text-slate-400 uppercase font-semibold text-[9px] sm:text-[10px] tracking-wider block">Department</span>
-                    <p className="font-semibold text-slate-800 mt-0.5 text-xs sm:text-sm break-words">{receipt.departmentName}</p>
+                    <p className="font-medium text-slate-800 mt-0.5 text-xs sm:text-sm break-words">{receipt.departmentName}</p>
                   </div>
                   <div>
                     <span className="text-slate-400 uppercase font-semibold text-[9px] sm:text-[10px] tracking-wider block">Disbursement Period</span>
-                    <p className="font-semibold text-slate-800 mt-0.5 text-xs sm:text-sm">{receipt.periodLabel}</p>
+                    <p className="font-medium text-slate-800 mt-0.5 text-xs sm:text-sm">{receipt.periodLabel}</p>
                   </div>
                 </div>
               </div>
 
               {/* Amount Highlight Box */}
-              <div className="flex items-center justify-between rounded-xl bg-blue-50/80 p-3 sm:p-5 print:p-3 border border-blue-100 print:border-slate-900 print:bg-slate-50 print:rounded-lg gap-2">
+              <div className="flex items-center justify-between rounded-lg bg-blue-50/80 p-3 sm:p-4 print:p-3 border border-blue-100 print:border-slate-900 print:bg-slate-50 gap-2">
                 <div className="min-w-0">
-                  <p className="text-[10px] sm:text-xs font-bold text-blue-900 uppercase tracking-wider">Total Disbursed Amount</p>
+                  <p className="text-[10px] sm:text-xs font-semibold text-blue-900 uppercase tracking-wider">Total Disbursed Amount</p>
                   <p className="text-[10px] sm:text-xs text-blue-700/80 capitalize mt-0.5">Payment Method: {receipt.paymentMethod.replace("_", " ")}</p>
                 </div>
-                <p className="font-mono text-lg sm:text-2xl font-black text-blue-950 print:text-slate-950 shrink-0">
+                <p className="font-mono text-lg sm:text-2xl font-bold text-blue-950 print:text-slate-950 shrink-0">
                   {formatInr(receipt.amountPaid)}
                 </p>
               </div>
@@ -248,11 +259,11 @@ ${receiptEl.outerHTML}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 text-xs text-slate-600 pt-2 border-t border-slate-100">
                 <div>
                   <span className="text-slate-400">Authorized By: </span>
-                  <span className="font-semibold text-slate-800">{receipt.authorizedBy || "Accounts Officer"}</span>
+                  <span className="font-medium text-slate-800">{receipt.authorizedBy || "Accounts Officer"}</span>
                 </div>
                 <div>
                   <span className="text-slate-400">Date Issued: </span>
-                  <span className="font-semibold text-slate-800">{receipt.issuedAt}</span>
+                  <span className="font-medium text-slate-800">{receipt.issuedAt}</span>
                 </div>
               </div>
 
@@ -261,25 +272,55 @@ ${receiptEl.outerHTML}
                 <div>
                   <p className="text-slate-400 mb-4 sm:mb-8 print:mb-6 font-medium">Employee Signature</p>
                   <div className="border-b border-slate-400 w-24 sm:w-36 print:w-44" />
-                  <p className="font-semibold text-slate-800 mt-1 text-[10px] sm:text-xs break-words">{receipt.employeeName}</p>
+                  <p className="font-medium text-slate-800 mt-1 text-[10px] sm:text-xs break-words">{receipt.employeeName}</p>
                 </div>
                 <div className="text-right flex flex-col items-end">
                   <p className="text-slate-400 mb-4 sm:mb-8 print:mb-6 font-medium">Authorized Signatory & Seal</p>
                   <div className="border-b border-slate-400 w-24 sm:w-36 print:w-44" />
-                  <p className="font-semibold text-slate-800 mt-1 text-[10px] sm:text-xs break-words">{receipt.authorizedBy || "AimHop CRM Accounts"}</p>
+                  <p className="font-medium text-slate-800 mt-1 text-[10px] sm:text-xs break-words">{receipt.authorizedBy || "AimHop ERP Accounts"}</p>
                 </div>
               </div>
 
               {/* Disclaimer */}
               <p className="text-center text-[9px] sm:text-[10px] text-slate-400 pt-3 sm:pt-4 border-t border-dashed border-slate-200">
-                This is an official computer-generated receipt issued by AimHop CRM. Valid without physical stamp if electronically verified.
+                This is an official computer-generated receipt issued by AimHop ERP. Valid without physical stamp if electronically verified.
               </p>
             </div>
+
+            {/* Email Input Tray */}
+            {showEmailInput && (
+              <form onSubmit={handleSendEmail} className="px-4 py-3 bg-slate-50 border-t border-slate-200 no-print flex items-center gap-2">
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter employee email..."
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-500"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={sendingEmail}
+                  loading={sendingEmail}
+                >
+                  Send
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowEmailInput(false)}
+                >
+                  Cancel
+                </Button>
+              </form>
+            )}
 
             {/* Email Status Toast inside Modal */}
             {emailFeedback && (
               <div
-                className={`px-4 py-2 text-xs font-semibold flex items-center justify-between no-print ${
+                className={`px-4 py-2 text-xs font-medium flex items-center justify-between no-print ${
                   emailFeedback.type === "success"
                     ? "bg-emerald-50 text-emerald-800 border-t border-emerald-200"
                     : "bg-rose-50 text-rose-800 border-t border-rose-200"
@@ -289,53 +330,45 @@ ${receiptEl.outerHTML}
                 <button
                   type="button"
                   onClick={() => setEmailFeedback(null)}
-                  className="text-slate-400 hover:text-slate-700 font-bold ml-2"
+                  className="text-slate-400 hover:text-slate-700 ml-2 cursor-pointer"
+                  aria-label="Dismiss feedback"
                 >
-                  ✕
+                  <X size={14} />
                 </button>
               </div>
             )}
 
             {/* Modal Screen Footer Actions - hidden on print */}
-            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2.5 sm:px-6 sm:py-3.5 no-print print:hidden">
-              <button
+            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2.5 sm:px-6 sm:py-3 no-print print:hidden">
+              <Button
                 type="button"
-                disabled={sendingEmail}
-                onClick={handleSendEmail}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-semibold text-blue-700 shadow-2xs hover:bg-blue-100 transition cursor-pointer disabled:opacity-50"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEmailInput(!showEmailInput)}
+                className="gap-1.5 text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100"
               >
-                {sendingEmail ? (
-                  <>
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                    </svg>
-                    <span>Sending…</span>
-                  </>
-                ) : (
-                  <>
-                    <span>✉️</span>
-                    <span>Email Salary Slip</span>
-                  </>
-                )}
-              </button>
+                <Mail size={13} />
+                <span>Email Salary Slip</span>
+              </Button>
 
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setOpen(false)}
-                  className="rounded-xl border border-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   Close
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  size="sm"
                   onClick={handlePrint}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 cursor-pointer"
+                  className="gap-1.5"
                 >
-                  <Printer size={14} />
+                  <Printer size={13} />
                   <span>Print Receipt</span>
-                </button>
+                </Button>
               </div>
             </div>
           </div>

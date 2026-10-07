@@ -20,7 +20,7 @@ export default async function CategoriesPage() {
     <AppShell title="Employment Categories" email={session.email} roleLabel={roleLabel} variant="admin">
       <PageHeader
         title="Staff Employment Categories"
-        description="Classify staff by employment status (Permanent, Contractual, Internship, Daily Engagement)."
+        description="Classify staff agreements, contract tiers, and employment policies."
         breadcrumbs={[
           { label: "Dashboard", href: "/admin/dashboard" },
           { label: "Workforce", href: "/admin/staff" },

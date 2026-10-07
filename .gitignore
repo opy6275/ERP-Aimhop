@@ -1,56 +1,98 @@
-# dependencies
+# ==========================================
+# AimHop ERP — Production .gitignore
+# ==========================================
+
+# 1. Environment & Sensitive Credentials (CRITICAL)
+.env
+.env.*
+*.env
+*.env.local
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+
+# 2. Dependencies & Package Managers
 node_modules/
 .pnp
 .pnp.js
+.yarn/cache
+.yarn/unplugged
 
-# next
+# 3. Next.js & Build Outputs
 .next/
 out/
 build/
-
-# env & secrets
-.env
-.env*.local
-!.env.example
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# prisma
-prisma/*.db
-prisma/*.db-journal
-
-# uploads (local dev)
-storage/
-uploads/
-
-# IDE & OS
-.idea/
-.vscode/*
-!.vscode/extensions.json
-.DS_Store
-Thumbs.db
-
-# test & coverage
-coverage/
-playwright-report/
-test-results/
-
-# typescript
+dist/
+.turbo/
 *.tsbuildinfo
 next-env.d.ts
 
-# AI & agent tooling / workflows
+# 4. Documentation & Internal Specs (Ignored as requested)
+docs/
+VERSION
+GSD-STYLE.md
+PROJECT_RULES.md
+model_capabilities.yaml
+*.doc
+*.docx
+*.pdf
+
+# 5. AI, Agent & LLM Automation Workflows
 .agent/
 .agents/
 .gsd/
 .gemini/
-model_capabilities.yaml
-GSD-STYLE.md
-PROJECT_RULES.md
 adapters/
 
-# Local testing & scratch scripts
+# 6. Database Files & Local SQLite
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+prisma/*.db
+prisma/*.db-journal
+
+# 7. Local Scripts, Test Suites & Scratch Files
 scripts/
+coverage/
+playwright-report/
+test-results/
+
+# 8. Logs & Debugging Artifacts
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 9. IDE & Editor Configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+
+# 10. OS & Filesystem Cache
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# 11. Local Uploads & Storage Caches
+storage/
+uploads/
+tmp/
+temp/

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil, CheckCircle2, AlertCircle } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 
 type CompanyData = {
   name: string;
@@ -54,36 +56,36 @@ export function CompanySettingsForm({ initialCompany }: { initialCompany: Compan
   }
 
   const inputClass =
-    "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
-  const labelClass = "block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5";
+    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20";
+  const labelClass = "block text-xs font-semibold text-slate-700 mb-1";
 
   if (!isEditing) {
     return (
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 text-sm">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Company Name</span>
-            <span className="mt-1 text-base font-bold text-slate-900 block">{initialCompany?.name ?? "AimHop CRM"}</span>
+            <span className="mt-1 text-base font-bold text-slate-900 block">{initialCompany?.name ?? "AimHop ERP"}</span>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Legal Registered Entity</span>
             <span className="mt-1 text-base font-bold text-slate-900 block">{initialCompany?.legalName ?? "AimHop Solutions Pvt. Ltd."}</span>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Accounting Currency</span>
             <span className="mt-1 text-base font-bold text-slate-900 flex items-center gap-1.5">
               <span className="font-mono text-blue-600">₹</span> {initialCompany?.currency ?? "INR"} (Indian Rupee)
             </span>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Operating Timezone</span>
             <span className="mt-1 text-base font-bold text-slate-900 block">{initialCompany?.timezone ?? "Asia/Kolkata (IST)"}</span>
           </div>
 
-          <div className="sm:col-span-2 p-4 rounded-xl bg-slate-50 border border-slate-100">
+          <div className="sm:col-span-2 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Receipt Legal Footer Note</span>
             <span className="mt-1 font-medium text-slate-800 block">
               {initialCompany?.receiptFooter ?? "This is a computer-generated receipt and does not require physical signature."}
@@ -92,22 +94,21 @@ export function CompanySettingsForm({ initialCompany }: { initialCompany: Compan
         </div>
 
         {success && (
-          <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">
-            {success}
-          </p>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            <span>{success}</span>
+          </div>
         )}
 
         <div className="flex items-center justify-end pt-2">
-          <button
+          <Button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer"
+            size="sm"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Edit Company Profile
-          </button>
+            <Pencil size={14} />
+            <span>Edit Company Profile</span>
+          </Button>
         </div>
       </div>
     );
@@ -118,7 +119,7 @@ export function CompanySettingsForm({ initialCompany }: { initialCompany: Compan
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>Company Brand Name *</label>
-          <input name="name" required defaultValue={initialCompany?.name || "AimHop CRM"} className={inputClass} />
+          <input name="name" required defaultValue={initialCompany?.name || "AimHop ERP"} className={inputClass} />
         </div>
 
         <div>
@@ -159,26 +160,29 @@ export function CompanySettingsForm({ initialCompany }: { initialCompany: Compan
       </div>
 
       {error && (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
-          {error}
-        </p>
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700 flex items-center gap-2">
+          <AlertCircle size={16} className="text-rose-600 shrink-0" />
+          <span>{error}</span>
+        </div>
       )}
 
       <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => setIsEditing(false)}
-          className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
+          loading={loading}
+          size="sm"
         >
-          {loading ? "Saving…" : "Save Settings"}
-        </button>
+          Save Settings
+        </Button>
       </div>
     </form>
   );

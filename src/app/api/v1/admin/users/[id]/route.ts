@@ -28,10 +28,32 @@ export async function PATCH(request: Request, ctx: Ctx) {
     });
   }
 
-  const existing = await prisma.user.findUnique({ where: { id } });
+  const d = parsed.data;
+
+  const existing = await prisma.user.findUnique({
+    where: { id },
+    include: { role: true },
+  });
   if (!existing) return notFound();
 
-  const d = parsed.data;
+  // Protect against deactivating the last active administrator
+  if (d.isActive === false && (existing.role.slug === "admin" || existing.role.slug === "super_admin")) {
+    const activeAdmins = await prisma.user.count({
+      where: {
+        role: { slug: { in: ["admin", "super_admin"] } },
+        isActive: true,
+        id: { not: id },
+      },
+    });
+    if (activeAdmins === 0) {
+      return apiError(
+        "BAD_REQUEST",
+        "Cannot deactivate the last remaining active administrator account.",
+        400,
+      );
+    }
+  }
+
   const updateData: {
     email?: string;
     roleId?: string;
@@ -55,6 +77,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
   if (d.staffId !== undefined) updateData.staffId = d.staffId;
   if (d.password) {
     updateData.passwordHash = await bcrypt.hash(d.password, 10);
+    (updateData as Record<string, unknown>).tokenVersion = { increment: 1 };
   }
 
   const updated = await prisma.user.update({
@@ -95,10 +118,55 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     return apiError("BAD_REQUEST", "You cannot delete your own logged-in user account.", 400);
   }
 
-  const existing = await prisma.user.findUnique({ where: { id } });
+  const existing = await prisma.user.findUnique({
+    where: { id },
+    include: { role: true },
+  });
   if (!existing) return notFound();
 
-  await prisma.user.delete({ where: { id } });
+  // Protect against deleting the last administrator
+  if (existing.role.slug === "admin" || existing.role.slug === "super_admin") {
+    const activeAdmins = await prisma.user.count({
+      where: {
+        role: { slug: { in: ["admin", "super_admin"] } },
+        isActive: true,
+        id: { not: id },
+      },
+    });
+    if (activeAdmins === 0) {
+      return apiError(
+        "BAD_REQUEST",
+        "Cannot delete the last remaining active administrator account.",
+        400,
+      );
+    }
+  }
+
+  // Check if user has dependent payment creation records to preserve financial ledger
+  const paymentCount = await prisma.payment.count({ where: { createdById: id } });
+  if (paymentCount > 0) {
+    return apiError(
+      "CONFLICT",
+      `Cannot delete user '${existing.email}' because they have recorded ${paymentCount} payment transaction(s). Please deactivate the user instead to preserve the ledger history.`,
+      400,
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.auditLog.updateMany({
+      where: { actorUserId: id },
+      data: { actorUserId: null },
+    }),
+    prisma.attendanceRecord.updateMany({
+      where: { markedById: id },
+      data: { markedById: null },
+    }),
+    prisma.leaveRequest.updateMany({
+      where: { reviewedById: id },
+      data: { reviewedById: null },
+    }),
+    prisma.user.delete({ where: { id } }),
+  ]);
 
   await writeAudit({
     actorUserId: user.id,

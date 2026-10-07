@@ -385,7 +385,7 @@ async function main() {
     },
   });
 
-  // Demo Staff user (linked to Rahul Sharma - STAFF-00001)
+  // Staff users (created for all staff members)
   const rahulStaff = createdStaff["STAFF-00001"];
   await prisma.user.upsert({
     where: { email: "staff@aimhop.com" },
@@ -403,6 +403,29 @@ async function main() {
       isActive: true,
     },
   });
+
+  // Seed login credentials for all other staff members so they can log in
+  for (const s of staffMembers) {
+    const staffRecord = createdStaff[s.staffCode];
+    if (!staffRecord || s.staffCode === "STAFF-00001") continue;
+    const loginEmail = (s.email?.trim().toLowerCase()) || `${s.staffCode.toLowerCase()}@aimhop.com`;
+    await prisma.user.upsert({
+      where: { email: loginEmail },
+      update: {
+        passwordHash: staffHash,
+        roleId: staffRole.id,
+        staffId: staffRecord.id,
+        isActive: true,
+      },
+      create: {
+        email: loginEmail,
+        passwordHash: staffHash,
+        roleId: staffRole.id,
+        staffId: staffRecord.id,
+        isActive: true,
+      },
+    });
+  }
 
   // Clean up old .local user if present
   await prisma.user.deleteMany({ where: { email: "superadmin@aimhop.local" } });

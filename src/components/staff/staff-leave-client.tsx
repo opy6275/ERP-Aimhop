@@ -63,8 +63,8 @@ export function StaffLeaveClient() {
       });
 
       const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error?.message || "Failed to submit leave request");
+      if (!res.ok) {
+        throw new Error(data.message || data.error?.message || "Failed to submit leave request");
       }
 
       setSuccess("Leave request submitted successfully!");
@@ -183,7 +183,7 @@ export function StaffLeaveClient() {
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                  placeholder="Explain why you are requesting leave (e.g. personal family event, doctor appointment)..."
+                  placeholder="State reason for leave request..."
                   rows={3}
                   className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-800 transition focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
                   required

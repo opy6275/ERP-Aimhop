@@ -1,8 +1,16 @@
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
-/** Simple in-memory rate limit (per process). */
+/** Simple in-memory rate limit (per process) with automatic memory eviction. */
 export function rateLimit(key: string, limit = 30, windowMs = 60_000) {
   const now = Date.now();
+
+  // Prune expired entries periodically to prevent memory accumulation
+  if (buckets.size > 2000) {
+    for (const [k, v] of buckets.entries()) {
+      if (v.resetAt < now) buckets.delete(k);
+    }
+  }
+
   const cur = buckets.get(key);
   if (!cur || cur.resetAt < now) {
     buckets.set(key, { count: 1, resetAt: now + windowMs });

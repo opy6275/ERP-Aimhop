@@ -43,8 +43,8 @@ export default async function StaffPaymentsPage() {
   return (
     <AppShell title="My Payments" email={session.email} roleLabel={roleLabel} variant="staff">
       <PageHeader
-        title="Compensation & Payment History"
-        description="Review disbursement history, salary settlements, and pending dues."
+        title="Payments & Slips"
+        description="Review salary settlements, disbursement records, and payment receipts."
         breadcrumbs={[
           { label: "Staff Portal", href: "/app/dashboard" },
           { label: "Payments" },

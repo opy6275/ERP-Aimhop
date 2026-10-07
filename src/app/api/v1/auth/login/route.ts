@@ -96,6 +96,7 @@ export async function POST(request: Request) {
       email: user.email,
       role: user.role.slug,
       staffId: user.staffId,
+      tokenVersion: (user as { tokenVersion?: number }).tokenVersion ?? 1,
     });
 
     await writeAudit({

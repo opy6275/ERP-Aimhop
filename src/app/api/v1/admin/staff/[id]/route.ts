@@ -123,6 +123,14 @@ export async function PATCH(request: Request, ctx: Ctx) {
     },
   });
 
+  // If status was updated and staff has a linked user account, keep user isActive in sync
+  if (d.status && updated.user) {
+    await prisma.user.update({
+      where: { id: updated.user.id },
+      data: { isActive: d.status === "active" },
+    });
+  }
+
   await writeAudit({
     actorUserId: user.id,
     action: "staff.update",
@@ -151,7 +159,16 @@ export async function DELETE(_req: Request, ctx: Ctx) {
       },
     },
   });
+
   if (!existing) return notFound();
+
+  if (existing._count.payments > 0 || existing._count.attendance > 0) {
+    return apiError(
+      "CONFLICT",
+      `Cannot hard-delete staff member '${existing.fullName}' because they have ${existing._count.payments} payment(s) and ${existing._count.attendance} attendance record(s). Please deactivate their status to 'inactive' instead to preserve financial and attendance records.`,
+      400,
+    );
+  }
 
   // Atomically delete linked user credentials and staff profile
   await prisma.$transaction([

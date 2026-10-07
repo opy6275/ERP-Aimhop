@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CheckCircle2, AlertCircle, Trash2, Save, Loader2 } from "lucide-react";
 
 type Opt = { id: string; name: string };
 
@@ -40,6 +42,7 @@ export function StaffEditForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -93,12 +96,7 @@ export function StaffEditForm({
     }
   }
 
-  async function handleDelete() {
-    const confirmed = window.confirm(
-      `Are you sure you want to permanently delete ${staff.fullName} (${staff.staffCode})? This action cannot be undone.`,
-    );
-    if (!confirmed) return;
-
+  async function confirmDelete() {
     setDeleting(true);
     setError(null);
     try {
@@ -111,6 +109,7 @@ export function StaffEditForm({
         setDeleting(false);
         return;
       }
+      setDeleteOpen(false);
       router.push("/admin/staff");
       router.refresh();
     } catch {
@@ -135,8 +134,8 @@ export function StaffEditForm({
               </svg>
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900">Personal & Identity Information</h3>
-              <p className="text-xs text-slate-500">Employee legal name and primary contact details</p>
+              <h3 className="text-base font-semibold text-slate-900">Personal Details</h3>
+              <p className="text-xs text-slate-500">Contact details and identification</p>
             </div>
           </div>
           <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
@@ -161,7 +160,7 @@ export function StaffEditForm({
               name="mobile"
               defaultValue={staff.mobile || ""}
               className={inputClass}
-              placeholder="e.g. 9876543210"
+              placeholder="Mobile phone number"
             />
           </div>
 
@@ -216,8 +215,8 @@ export function StaffEditForm({
             </svg>
           </div>
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Organizational Assignment & Status</h3>
-            <p className="text-xs text-slate-500">Department, classification tier, job title, and active status</p>
+            <h3 className="text-base font-semibold text-slate-900">Department & Role</h3>
+            <p className="text-xs text-slate-500">Organizational assignment and employment status</p>
           </div>
         </div>
 
@@ -250,14 +249,15 @@ export function StaffEditForm({
               name="designation"
               defaultValue={staff.designation || ""}
               className={inputClass}
+              placeholder="Job title"
             />
           </div>
 
           <div>
             <label className={labelClass}>Employment Status *</label>
             <select name="status" className={inputClass} defaultValue={staff.status}>
-              <option value="active">Active (On Duty)</option>
-              <option value="inactive">Inactive / Separated</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
           </div>
 
@@ -292,8 +292,8 @@ export function StaffEditForm({
             </svg>
           </div>
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Compensation & Settlement Accounts</h3>
-            <p className="text-xs text-slate-500">Pay frequency, baseline salary amount, and bank credentials</p>
+            <h3 className="text-base font-semibold text-slate-900">Compensation & Banking</h3>
+            <p className="text-xs text-slate-500">Salary structure and disbursement details</p>
           </div>
         </div>
 
@@ -362,18 +362,14 @@ export function StaffEditForm({
 
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700 flex items-center gap-2.5">
-          <svg className="w-5 h-5 shrink-0 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+          <AlertCircle className="w-5 h-5 shrink-0 text-rose-600" />
           <span>{error}</span>
         </div>
       ) : null}
 
       {success ? (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 flex items-center gap-2.5">
-          <svg className="w-5 h-5 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-          </svg>
+          <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
           <span>{success}</span>
         </div>
       ) : null}
@@ -388,17 +384,12 @@ export function StaffEditForm({
           >
             {loading ? (
               <>
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
+                <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Saving Changes…</span>
               </>
             ) : (
               <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
+                <Save className="w-4 h-4" />
                 <span>Save Changes</span>
               </>
             )}
@@ -416,15 +407,24 @@ export function StaffEditForm({
         <button
           type="button"
           disabled={loading || deleting}
-          onClick={handleDelete}
+          onClick={() => setDeleteOpen(true)}
           className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer w-full sm:w-auto"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
+          <Trash2 className="w-4 h-4" />
           <span>{deleting ? "Deleting Employee…" : "Delete Employee"}</span>
         </button>
       </div>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Permanently Delete Staff Member?"
+        description={`Are you sure you want to permanently delete ${staff.fullName} (${staff.staffCode})? This will permanently remove their employment records, payroll history, and attendance data. This action cannot be reversed.`}
+        confirmText="Yes, Delete Employee"
+        confirmTone="danger"
+        loading={deleting}
+        onConfirm={confirmDelete}
+      />
     </form>
   );
 }

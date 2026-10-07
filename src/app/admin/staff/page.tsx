@@ -30,7 +30,7 @@ export default async function StaffListPage({
   const q = sp.q?.trim() ?? "";
   const status = sp.status === "inactive" ? "inactive" : sp.status === "active" ? "active" : undefined;
 
-  const [departments, staff, allStaffCounts] = await Promise.all([
+  const [departments, staff, staffStatusGroups] = await Promise.all([
     prisma.department.findMany({ orderBy: { name: "asc" } }),
     prisma.staff.findMany({
       where: {
@@ -53,17 +53,26 @@ export default async function StaffListPage({
         category: true,
       },
     }),
-    prisma.staff.findMany({
-      select: { status: true, salaryAmount: true },
+    prisma.staff.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+      _sum: { salaryAmount: true },
     }),
   ]);
 
-  const totalHeadcount = allStaffCounts.length;
-  const activeCount = allStaffCounts.filter((s) => s.status === "active").length;
-  const inactiveCount = totalHeadcount - activeCount;
-  const totalPayrollCommitment = allStaffCounts
-    .filter((s) => s.status === "active")
-    .reduce((sum, s) => sum + Number(s.salaryAmount), 0);
+  let activeCount = 0;
+  let inactiveCount = 0;
+  let totalPayrollCommitment = 0;
+
+  for (const g of staffStatusGroups) {
+    if (g.status === "active") {
+      activeCount = g._count._all;
+      totalPayrollCommitment = Number(g._sum.salaryAmount ?? 0);
+    } else if (g.status === "inactive") {
+      inactiveCount = g._count._all;
+    }
+  }
+  const totalHeadcount = activeCount + inactiveCount;
 
   return (
     <AppShell title="Staff Directory" email={session.email} roleLabel={roleLabel} variant="admin">
@@ -92,7 +101,7 @@ export default async function StaffListPage({
           value={String(totalHeadcount)}
           tone="default"
           icon={<Users size={18} />}
-          hint="Enrolled staff members across company"
+          hint={`${inactiveCount} archived / inactive profiles`}
         />
         <KpiCard
           label="Active On Duty"
@@ -118,15 +127,15 @@ export default async function StaffListPage({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="mb-6 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
         <form className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               name="q"
               defaultValue={q}
-              placeholder="Search by name, employee code (e.g. STAFF-00001), email, or mobile..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-xs sm:text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              placeholder="Search by name, employee code, email, or mobile..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2 pl-10 pr-4 text-xs sm:text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
             />
           </div>
 
@@ -134,7 +143,7 @@ export default async function StaffListPage({
             <select
               name="departmentId"
               defaultValue={sp.departmentId ?? ""}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">All Departments</option>
               {departments.map((d) => (
@@ -147,7 +156,7 @@ export default async function StaffListPage({
             <select
               name="status"
               defaultValue={sp.status ?? ""}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">All Statuses</option>
               <option value="active">Active</option>
@@ -156,16 +165,16 @@ export default async function StaffListPage({
 
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-blue-700 cursor-pointer"
             >
               <Filter size={14} />
-              <span>Apply Filter</span>
+              <span>Filter</span>
             </button>
 
             {(q || sp.departmentId || sp.status) && (
               <Link
                 href="/admin/staff"
-                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
               >
                 Reset
               </Link>
@@ -215,7 +224,7 @@ export default async function StaffListPage({
                 <tr key={s.id} className="transition-colors hover:bg-blue-50/40 group">
                   <Td>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 font-mono text-xs font-black text-white shadow-sm ring-2 ring-blue-100">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 font-mono text-xs font-bold text-slate-700 border border-slate-200">
                         {initials}
                       </div>
                       <div>

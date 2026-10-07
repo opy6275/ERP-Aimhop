@@ -33,47 +33,40 @@ export async function POST(request: Request) {
   const { email, otp, newPassword } = parsed.data;
   const normalizedEmail = email.trim().toLowerCase();
 
-  const rows = await prisma.$queryRawUnsafe<
-    Array<{
-      id: string;
-      email: string;
-      is_active: number | boolean;
-      reset_otp_hash: string | null;
-      reset_otp_expires: string | null;
-    }>
-  >(
-    `SELECT id, email, is_active, reset_otp_hash, reset_otp_expires FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1`,
-    normalizedEmail
-  );
+  const user = await prisma.user.findFirst({
+    where: { email: normalizedEmail },
+  });
 
-  const user = rows[0];
-
-  if (!user || !user.is_active) {
+  if (!user || !user.isActive) {
     return apiError("INVALID_REQUEST", "Unable to reset password for this email.", 400);
   }
 
-  if (!user.reset_otp_hash || !user.reset_otp_expires) {
+  if (!user.resetOtpHash || !user.resetOtpExpires) {
     return apiError("NO_OTP_REQUESTED", "No active verification code found. Please request a new code first.", 400);
   }
 
   // Check expiry
-  if (new Date() > new Date(user.reset_otp_expires)) {
+  if (new Date() > new Date(user.resetOtpExpires)) {
     return apiError("OTP_EXPIRED", "Verification code has expired. Please request a new code.", 400);
   }
 
   // Verify OTP match
-  const isValidOtp = await bcrypt.compare(otp.trim(), user.reset_otp_hash);
+  const isValidOtp = await bcrypt.compare(otp.trim(), user.resetOtpHash);
   if (!isValidOtp) {
     return apiError("INVALID_OTP", "Incorrect 6-digit verification code. Please check your email and try again.", 400);
   }
 
-  // Hash new password and clear OTP
+  // Hash new password, clear OTP, and increment tokenVersion to instantly revoke all active sessions
   const passwordHash = await bcrypt.hash(newPassword, 10);
-  await prisma.$executeRawUnsafe(
-    `UPDATE users SET password_hash = ?, reset_otp_hash = NULL, reset_otp_expires = NULL WHERE id = ?`,
-    passwordHash,
-    user.id
-  );
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordHash,
+      resetOtpHash: null,
+      resetOtpExpires: null,
+      tokenVersion: { increment: 1 } as unknown as number,
+    },
+  });
 
   await writeAudit({
     actorUserId: user.id,

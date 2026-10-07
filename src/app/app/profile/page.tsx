@@ -30,8 +30,8 @@ export default async function StaffProfilePage() {
   return (
     <AppShell title="My Profile" email={session.email} roleLabel={roleLabel} variant="staff">
       <PageHeader
-        title="Personal Profile & Account"
-        description="Your official employment record, assigned department, and payment parameters."
+        title="Employee Profile"
+        description="Official employment record, organizational placement, and banking details."
         breadcrumbs={[
           { label: "Staff Portal", href: "/app/dashboard" },
           { label: "Profile" },

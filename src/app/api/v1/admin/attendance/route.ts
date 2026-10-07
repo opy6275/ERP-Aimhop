@@ -75,11 +75,12 @@ export async function PUT(request: Request) {
   for (const r of parsed.data.records) {
     const row = await prisma.attendanceRecord.upsert({
       where: { staffId_date: { staffId: r.staffId, date: day } },
-      update: { status: r.status, note: r.note || null, markedById: user.id },
+      update: { status: r.status, approvalStatus: "approved", note: r.note || null, markedById: user.id },
       create: {
         staffId: r.staffId,
         date: day,
         status: r.status,
+        approvalStatus: "approved",
         note: r.note || null,
         markedById: user.id,
       },

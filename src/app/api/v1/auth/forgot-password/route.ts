@@ -46,12 +46,13 @@ export async function POST(request: Request) {
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
   // Save OTP hash and expiry to user
-  await prisma.$executeRawUnsafe(
-    `UPDATE users SET reset_otp_hash = ?, reset_otp_expires = ? WHERE id = ?`,
-    otpHash,
-    expiresAt.toISOString(),
-    user.id
-  );
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetOtpHash: otpHash,
+      resetOtpExpires: expiresAt,
+    },
+  });
 
   // Send Email OTP
   const emailResult = await sendPasswordResetOtpEmail(user.email, otp, user.staff?.fullName);
@@ -67,6 +68,6 @@ export async function POST(request: Request) {
   return apiOk({
     success: true,
     message: `Verification code sent to ${user.email}. Check your inbox.`,
-    devOtp: emailResult.devOtp, // available for testing if SMTP not active
+    ...(process.env.NODE_ENV !== "production" && emailResult.devOtp ? { devOtp: emailResult.devOtp } : {}),
   });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Printer, CalendarCheck, Clock, X, CheckCircle2, AlertCircle } from "@/components/ui/icons";
+import { Printer, CalendarCheck, Clock, X } from "@/components/ui/icons";
 import { formatDate } from "@/lib/format";
 
 type MonthlyAttendanceData = {
@@ -40,6 +40,7 @@ type MonthlyAttendanceData = {
 };
 
 export function StaffMonthlySheetModal({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   initialStaff,
 }: {
   initialStaff?: { id?: string; fullName?: string; staffCode?: string };

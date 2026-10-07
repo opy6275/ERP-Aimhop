@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ReceiptModal, ReceiptData } from "@/components/admin/receipt-modal";
+import { Mail, Trash2, Check } from "@/components/ui/icons";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
 
 export function PaymentRowActions({
   paymentId,
@@ -20,105 +24,189 @@ export function PaymentRowActions({
   emailSentTo?: string | null;
 }) {
   const router = useRouter();
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState(emailSentTo || "");
   const [deleting, setDeleting] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  async function handleSendEmail() {
-    const inputEmail = window.prompt(
-      `Send salary slip of ${amountFormatted} for ${employeeName} to email:`,
-      emailSentTo || "",
-    );
-    if (inputEmail === null) return;
+  async function handleSendEmailSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!recipientEmail.trim() || !recipientEmail.includes("@")) {
+      setEmailStatus({ type: "error", message: "Please enter a valid email address." });
+      return;
+    }
 
     setSendingEmail(true);
+    setEmailStatus(null);
     try {
       const res = await fetch(`/api/v1/admin/payments/${paymentId}/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recipientEmail: inputEmail.trim() || undefined,
+          recipientEmail: recipientEmail.trim(),
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.message || data.error || "Could not deliver email");
+        setEmailStatus({
+          type: "error",
+          message: data.message || data.error || "Could not deliver salary slip email.",
+        });
         return;
       }
-      alert(`✅ Salary slip successfully sent to ${data.data?.recipient || inputEmail}!`);
-      router.refresh();
+      setEmailStatus({
+        type: "success",
+        message: `Salary slip delivered to ${data.data?.recipient || recipientEmail}!`,
+      });
+      setTimeout(() => {
+        setIsEmailModalOpen(false);
+        router.refresh();
+      }, 1000);
     } catch {
-      alert("Network error while sending email");
+      setEmailStatus({ type: "error", message: "Network error while sending email." });
     } finally {
       setSendingEmail(false);
     }
   }
 
-  async function handleDelete() {
-    const confirmed = window.confirm(
-      `Are you sure you want to void and delete this payment transaction of ${amountFormatted} for ${employeeName}? This will also cancel any generated receipt.`,
-    );
-    if (!confirmed) return;
-
+  async function confirmDelete() {
     setDeleting(true);
     try {
       const res = await fetch(`/api/v1/admin/payments/${paymentId}`, {
         method: "DELETE",
       });
-      const data = await res.json();
       if (!res.ok) {
-        alert(data.message || "Could not delete payment");
+        setIsDeleteOpen(false);
         return;
       }
+      setIsDeleteOpen(false);
       router.refresh();
     } catch {
-      alert("Network error while deleting payment");
+      setIsDeleteOpen(false);
     } finally {
       setDeleting(false);
     }
   }
 
   return (
-    <div className="flex items-center gap-1.5 justify-end">
-      {/* Email Salary Slip Button */}
-      <button
-        type="button"
-        disabled={sendingEmail}
-        onClick={handleSendEmail}
-        className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold transition cursor-pointer disabled:opacity-50 ${
-          emailSentAt
-            ? "border-emerald-200 bg-emerald-50/80 text-emerald-700 hover:bg-emerald-100"
-            : "border-blue-200 bg-blue-50/70 text-blue-700 hover:bg-blue-100"
-        }`}
-        title={
-          emailSentAt
-            ? `Emailed on ${emailSentAt} to ${emailSentTo || "employee"}. Click to resend.`
-            : "Send salary slip to employee email"
-        }
-      >
-        {sendingEmail ? (
-          <span className="animate-spin text-xs">↻</span>
-        ) : emailSentAt ? (
-          <span>✓</span>
-        ) : (
-          <span>✉</span>
-        )}
-        <span>{emailSentAt ? "Emailed" : "Email Slip"}</span>
-      </button>
+    <>
+      <div className="flex items-center gap-1.5 justify-end">
+        {/* Email Salary Slip Button */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setEmailStatus(null);
+            setRecipientEmail(emailSentTo || "");
+            setIsEmailModalOpen(true);
+          }}
+          className={`h-7 px-2.5 text-xs transition ${
+            emailSentAt
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+          }`}
+          title={
+            emailSentAt
+              ? `Emailed on ${emailSentAt} to ${emailSentTo || "employee"}. Click to resend.`
+              : "Send salary slip to employee email"
+          }
+        >
+          {emailSentAt ? (
+            <Check size={12} className="text-emerald-600" />
+          ) : (
+            <Mail size={12} className="text-blue-600" />
+          )}
+          <span>{emailSentAt ? "Emailed" : "Email Slip"}</span>
+        </Button>
 
-      {receipt && <ReceiptModal receipt={receipt} />}
+        {receipt && <ReceiptModal receipt={receipt} />}
 
-      <button
-        type="button"
-        disabled={deleting}
-        onClick={handleDelete}
-        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition cursor-pointer disabled:opacity-50"
-        title="Void / Delete Transaction"
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={deleting}
+          onClick={() => setIsDeleteOpen(true)}
+          className="h-7 px-2.5 text-xs text-rose-600 border-slate-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700"
+          title="Void / Delete Transaction"
+        >
+          <Trash2 size={12} className="text-rose-500" />
+          <span>Void</span>
+        </Button>
+      </div>
+
+      {/* Email Salary Slip Modal (Replaces window.prompt) */}
+      <Modal
+        open={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        title="Email Salary Slip"
+        description={`Send the verified salary slip of ${amountFormatted} to ${employeeName}.`}
+        size="default"
       >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-        {deleting ? "…" : "Void"}
-      </button>
-    </div>
+        <form onSubmit={handleSendEmailSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Recipient Email Address *
+            </label>
+            <input
+              type="email"
+              required
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+              placeholder="name@company.com"
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition hover:border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20"
+            />
+            <p className="text-[11px] text-slate-500 mt-1">
+              Official PDF details will be generated and dispatched via configured company SMTP.
+            </p>
+          </div>
+
+          {emailStatus && (
+            <div
+              className={`rounded-lg border p-2.5 text-xs font-medium ${
+                emailStatus.type === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border-rose-200 bg-rose-50 text-rose-800"
+              }`}
+            >
+              {emailStatus.message}
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEmailModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={sendingEmail}
+              loading={sendingEmail}
+            >
+              <Mail size={14} />
+              <span>Send Salary Slip</span>
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Void / Delete Confirmation Dialog (Replaces window.confirm) */}
+      <ConfirmDialog
+        open={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={confirmDelete}
+        title="Void Payment Transaction"
+        description={`Are you sure you want to void and permanently delete this payment transaction of ${amountFormatted} for ${employeeName}? This will also cancel any associated receipts.`}
+        confirmText="Void Transaction"
+        confirmTone="danger"
+        loading={deleting}
+      />
+    </>
   );
 }

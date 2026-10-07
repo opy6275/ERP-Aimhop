@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -24,13 +25,15 @@ export default async function StaffLeavesPage() {
 
   return (
     <AppShell title="My Leaves" email={session.email} roleLabel={roleLabel} variant="staff">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Leave Applications & History</h1>
-          <p className="text-sm text-slate-500">Apply for time off, track approval status, and view past leaves.</p>
-        </div>
-        <StaffLeaveClient />
-      </div>
+      <PageHeader
+        title="Leave Requests"
+        description="Submit time off requests and view review decisions."
+        breadcrumbs={[
+          { label: "Staff Portal", href: "/app/dashboard" },
+          { label: "Leaves" },
+        ]}
+        actionNode={<StaffLeaveClient />}
+      />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard

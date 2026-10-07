@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 interface AimHopLogoProps {
   className?: string;
@@ -33,10 +34,13 @@ export function AimHopLogo({
         className="relative shrink-0 flex items-center justify-center"
       >
         {useBrandImage ? (
-          <img
+          <Image
             src="/brand-logo.png"
             alt="AimHop Logo"
+            width={size}
+            height={size}
             className="w-full h-full object-contain drop-shadow-sm select-none"
+            priority
           />
         ) : (
           <svg
@@ -47,9 +51,9 @@ export function AimHopLogo({
           >
             <defs>
               <linearGradient id="aimhop-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FB923C" />
-                <stop offset="50%" stopColor="#F97316" />
-                <stop offset="100%" stopColor="#EA580C" />
+                <stop offset="0%" stopColor="#3B82F6" />
+                <stop offset="50%" stopColor="#2563EB" />
+                <stop offset="100%" stopColor="#1D4ED8" />
               </linearGradient>
             </defs>
             <rect
@@ -93,7 +97,7 @@ export function AimHopLogo({
               AimHop
             </span>
             <span
-              className="font-black text-orange-500"
+              className="font-black text-blue-600"
               style={{ fontSize: size * 0.65 }}
             >
               .

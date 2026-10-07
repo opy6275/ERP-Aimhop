@@ -2,12 +2,27 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Key,
+  Trash2,
+  ShieldCheck,
+  ShieldAlert,
+} from "@/components/ui/icons";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Switch } from "@/components/ui/switch";
+import { inputClass, labelClass } from "@/lib/form-styles";
 
 type UserData = {
   id: string;
   email: string;
   isActive: boolean;
   roleName: string;
+  isMasterAdmin?: boolean;
+  staffCode?: string;
+  staffName?: string;
 };
 
 export function UserRowActions({
@@ -19,6 +34,8 @@ export function UserRowActions({
 }) {
   const router = useRouter();
   const [editModal, setEditModal] = useState(false);
+  const [toggleStatusOpen, setToggleStatusOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -27,16 +44,8 @@ export function UserRowActions({
   const [email, setEmail] = useState(user.email);
   const [password, setPassword] = useState("");
   const [isActive, setIsActive] = useState(user.isActive);
-  const [showPassword, setShowPassword] = useState(false);
 
-  function generatePassword() {
-    const chars = "abcdefhkmnprstuvwxyz23456789";
-    let rand = "";
-    for (let i = 0; i < 4; i++) {
-      rand += chars[Math.floor(Math.random() * chars.length)];
-    }
-    setPassword(`AimHop#${rand}`);
-  }
+  const isProtectedAdmin = user.isMasterAdmin || isCurrentSessionUser;
 
   async function handleUpdateCredentials(e: React.FormEvent) {
     e.preventDefault();
@@ -71,7 +80,7 @@ export function UserRowActions({
         return;
       }
 
-      setSuccess("User credentials updated successfully!");
+      setSuccess("Credentials updated successfully!");
       setTimeout(() => {
         setEditModal(false);
         setPassword("");
@@ -84,47 +93,60 @@ export function UserRowActions({
     }
   }
 
-  async function handleDelete() {
-    if (isCurrentSessionUser) {
-      alert("You cannot delete your own logged-in administrator account!");
-      return;
+  async function confirmToggleStatus() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/v1/admin/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isActive: !user.isActive,
+        }),
+      });
+
+      if (res.ok) {
+        setToggleStatusOpen(false);
+        router.refresh();
+      }
+    } catch {
+      // handled gracefully
+    } finally {
+      setLoading(false);
     }
+  }
 
-    const confirmed = window.confirm(
-      `Are you sure you want to permanently delete user credentials for '${user.email}'? This user will no longer be able to log in.`,
-    );
-    if (!confirmed) return;
-
+  async function confirmDelete() {
     setLoading(true);
     try {
       const res = await fetch(`/api/v1/admin/users/${user.id}`, {
         method: "DELETE",
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.message || data.error || "Could not delete user account");
-        return;
+      if (res.ok) {
+        setDeleteOpen(false);
+        router.refresh();
       }
-
-      router.refresh();
     } catch {
-      alert("Network error while deleting user");
+      // handled gracefully
     } finally {
       setLoading(false);
     }
   }
 
-  const inputClass =
-    "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
-  const labelClass = "block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1";
 
-  return (
-    <>
-      <div className="flex items-center gap-1.5 justify-end">
-        {/* Edit / Update Credentials Button */}
-        <button
+
+  // Master Admin Row is Protected
+  if (isProtectedAdmin && user.roleName.toLowerCase().includes("admin")) {
+    return (
+      <div className="flex items-center gap-2 justify-end">
+        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+          <ShieldCheck size={12} className="text-blue-600" />
+          <span>Protected Master</span>
+        </span>
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => {
             setError(null);
             setSuccess(null);
@@ -133,158 +155,242 @@ export function UserRowActions({
             setPassword("");
             setEditModal(true);
           }}
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition cursor-pointer"
+          className="h-7 px-2 text-xs"
+          title="Change Password"
         >
-          <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-          </svg>
-          Edit Credentials
-        </button>
+          <Key size={12} className="text-slate-500" />
+          <span>Password</span>
+        </Button>
 
-        {/* Delete Button */}
-        {!isCurrentSessionUser && (
-          <button
-            type="button"
-            disabled={loading}
-            onClick={handleDelete}
-            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition cursor-pointer disabled:opacity-50"
-            title="Delete user credentials"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Delete
-          </button>
-        )}
+        {/* Change Password Modal for Admin */}
+        <Modal
+          open={editModal}
+          onClose={() => setEditModal(false)}
+          title="Update Admin Password"
+          description="Update credentials for the primary administrator account."
+          size="default"
+        >
+          <form onSubmit={handleUpdateCredentials} className="space-y-4">
+            <div>
+              <label className={labelClass}>Login Email Address *</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>New Password (leave blank to keep current)</label>
+              <PasswordInput
+                value={password}
+                onChange={setPassword}
+                placeholder="Enter new password"
+              />
+            </div>
+
+            {error && (
+              <p className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-700">
+                {error}
+              </p>
+            )}
+
+            {success && (
+              <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-700">
+                {success}
+              </p>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button type="button" variant="outline" onClick={() => setEditModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} loading={loading}>
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-1.5 justify-end">
+        {/* Quick Toggle Login Access Button */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setToggleStatusOpen(true)}
+          className={`h-7 px-2.5 text-xs transition ${
+            user.isActive
+              ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+          }`}
+          title={user.isActive ? "Temporarily disable login access" : "Activate portal login"}
+        >
+          {user.isActive ? (
+            <>
+              <ShieldAlert size={12} className="text-amber-700" />
+              <span className="hidden sm:inline">Disable Access</span>
+            </>
+          ) : (
+            <>
+              <ShieldCheck size={12} className="text-emerald-700" />
+              <span className="hidden sm:inline">Enable Access</span>
+            </>
+          )}
+        </Button>
+
+        {/* Edit Password Button */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setError(null);
+            setSuccess(null);
+            setEmail(user.email);
+            setIsActive(user.isActive);
+            setPassword("");
+            setEditModal(true);
+          }}
+          className="h-7 px-2 text-xs text-slate-700 hover:text-blue-700 hover:border-blue-200 hover:bg-blue-50"
+          title="Edit Credentials"
+        >
+          <Key size={12} className="text-slate-500" />
+          <span className="hidden sm:inline">Password</span>
+        </Button>
+
+        {/* Delete Login Account Button */}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={loading}
+          onClick={() => setDeleteOpen(true)}
+          className="h-7 px-2 text-xs text-rose-600 border-slate-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700"
+          title="Revoke and delete login credentials"
+        >
+          <Trash2 size={12} className="text-rose-500" />
+        </Button>
       </div>
 
       {/* Edit Credentials Modal */}
-      {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs" onClick={() => setEditModal(false)} />
-          <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-6 py-4">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-blue-600 text-white">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                  </svg>
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">Update User Credentials</h3>
-              </div>
+      <Modal
+        open={editModal}
+        onClose={() => setEditModal(false)}
+        title="Update Login Credentials"
+        description={`Manage email and password authentication for ${user.email}.`}
+        size="default"
+      >
+        <form onSubmit={handleUpdateCredentials} className="space-y-4">
+          <div>
+            <label className={labelClass}>Login Email Address *</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+            />
+          </div>
 
-              <button
-                type="button"
-                onClick={() => setEditModal(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-200/60 hover:text-slate-700 cursor-pointer"
-              >
-                ✕
-              </button>
+          <div>
+            <label className={labelClass}>
+              New Password (leave blank to keep current)
+            </label>
+            <PasswordInput
+              value={password}
+              onChange={setPassword}
+              placeholder="Enter new password to change"
+            />
+          </div>
+
+          {/* Account Status Switch inside Modal */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+            <div>
+              <span className="font-semibold text-slate-800 block">Login Access Status</span>
+              <span className="text-slate-500">Allow this employee to authenticate into Staff Portal</span>
             </div>
 
-            <form onSubmit={handleUpdateCredentials} className="p-6 space-y-4">
-              <div>
-                <label className={labelClass}>Login Email Address *</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    New Password (Leave blank to keep current)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={generatePassword}
-                    className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
-                  >
-                    🎲 Generate
-                  </button>
-                </div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter new password to change"
-                    className={`${inputClass} font-mono pr-10`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    {showPassword ? (
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {!isCurrentSessionUser && (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                  <div>
-                    <span className="font-semibold text-slate-800 block">Account Status</span>
-                    <span className="text-slate-500">Allow user to sign into the system</span>
-                  </div>
-
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isActive}
-                      onChange={(e) => setIsActive(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-              )}
-
-              {error && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-700">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-700">
-                  {success}
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setEditModal(false)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
-                >
-                  {loading ? "Saving…" : "Save Changes"}
-                </button>
-              </div>
-            </form>
+            <Switch
+              checked={isActive}
+              onCheckedChange={setIsActive}
+              badge={true}
+            />
           </div>
-        </div>
-      )}
+
+          {error && (
+            <p className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-700">
+              {error}
+            </p>
+          )}
+
+          {success && (
+            <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-semibold text-emerald-700">
+              {success}
+            </p>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <Button type="button" variant="outline" onClick={() => setEditModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading} loading={loading}>
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Toggle Status Confirmation Dialog (Replaces window.confirm) */}
+      <ConfirmDialog
+        open={toggleStatusOpen}
+        onClose={() => setToggleStatusOpen(false)}
+        onConfirm={confirmToggleStatus}
+        title={
+          user.isActive
+            ? user.staffName
+              ? `Deactivate Staff Access (${user.staffName})`
+              : "Disable Login Access"
+            : user.staffName
+              ? `Activate Staff Access (${user.staffName})`
+              : "Enable Login Access"
+        }
+        description={
+          user.isActive
+            ? user.staffName
+              ? `Are you sure you want to deactivate login access for ${user.staffName} (${user.staffCode ?? user.email})? Their portal login will be disabled and employee status will be set to inactive. Historical payroll and attendance records will remain safe.`
+              : `Are you sure you want to disable login access for '${user.email}'? They will no longer be able to log in to the ERP.`
+            : user.staffName
+              ? `Are you sure you want to activate login access for ${user.staffName} (${user.staffCode ?? user.email})? They will immediately be able to log into the Staff Portal with their registered credentials.`
+              : `Are you sure you want to activate login access for '${user.email}'? They will immediately be able to authenticate.`
+        }
+        confirmText={user.isActive ? "Deactivate" : "Activate"}
+        confirmTone={user.isActive ? "warning" : "default"}
+        loading={loading}
+      />
+
+      {/* Delete Account Confirmation Dialog (Replaces window.confirm) */}
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={confirmDelete}
+        title={user.staffName ? `Revoke Login & Deactivate (${user.staffName})` : "Revoke & Delete Login Account"}
+        description={
+          user.staffName
+            ? `Are you sure you want to revoke portal login credentials for ${user.staffName} (${user.staffCode ?? user.email})? This deletes their login account and deactivates their staff status. Their employee profile, attendance, and payroll records are NOT deleted.`
+            : `Are you sure you want to delete the portal login account for '${user.email}'? This removes their authentication credentials.`
+        }
+        confirmText="Revoke & Deactivate"
+        confirmTone="danger"
+        loading={loading}
+      />
     </>
   );
 }

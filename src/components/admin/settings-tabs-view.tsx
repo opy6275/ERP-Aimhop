@@ -68,15 +68,15 @@ export function SettingsTabsView({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${
+                  className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold transition cursor-pointer ${
                     isActive
-                      ? "bg-slate-900 text-white shadow-xs"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      ? "bg-blue-50 text-blue-700 border border-blue-200/80 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent"
                   }`}
                 >
                   <span
                     className={`shrink-0 ${
-                      isActive ? "text-orange-400" : "text-slate-400"
+                      isActive ? "text-blue-600" : "text-slate-400"
                     }`}
                   >
                     {tab.icon}

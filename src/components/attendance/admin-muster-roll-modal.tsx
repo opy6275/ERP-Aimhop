@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Printer, CalendarCheck, Clock, X, Users, Eye } from "@/components/ui/icons";
+import { Printer, CalendarCheck, Clock, X } from "@/components/ui/icons";
 
 type StaffMusterRow = {
   id: string;

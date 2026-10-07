@@ -35,8 +35,8 @@ export default async function AdminLeavesPage() {
   return (
     <AppShell title="Leave Management" email={session.email} roleLabel={roleLabel} variant="admin">
       <PageHeader
-        title="Leave Approvals & Workforce Time Off"
-        description="Review incoming employee leave requests, approve time-off with automated attendance marking, or decline with feedback."
+        title="Leave Management"
+        description="Review employee leave applications, approve time off, and maintain attendance synchronization."
         breadcrumbs={[
           { label: "Dashboard", href: "/admin/dashboard" },
           { label: "Operations" },

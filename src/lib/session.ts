@@ -11,6 +11,7 @@ export type SessionPayload = {
   email: string;
   role: string;
   staffId?: string | null;
+  tokenVersion?: number;
   exp: number;
 };
 

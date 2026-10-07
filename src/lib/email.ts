@@ -400,7 +400,7 @@ export async function sendSalarySlipEmail({
     const dateStr = formatDate(payment.paymentDate);
 
     const emailHtml = generateSalarySlipHtml({
-      companyName: company?.name || "AimHop CRM",
+      companyName: company?.name || "AimHop ERP",
       employeeName: payment.staff.fullName,
       staffCode: payment.staff.staffCode,
       departmentName: payment.staff.department.name,
@@ -500,7 +500,7 @@ export async function sendPasswordResetOtpEmail(toEmail: string, otp: string, re
       </div>
       <p style="color: #64748b; font-size: 12px; line-height: 1.5;">This code will expire in <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email. Your current password remains unchanged.</p>
       <div style="border-top: 1px solid #f1f5f9; margin-top: 24px; padding-top: 16px; text-align: center;">
-        <p style="color: #94a3b8; font-size: 11px; margin: 0;">AimHop CRM & ERP Enterprise System • Automated Notification</p>
+        <p style="color: #94a3b8; font-size: 11px; margin: 0;">AimHop ERP Enterprise System • Automated Notification</p>
       </div>
     </div>
   `;

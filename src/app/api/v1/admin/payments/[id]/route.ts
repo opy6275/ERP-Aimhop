@@ -1,5 +1,5 @@
 import { isErrorResponse, requirePermission } from "@/lib/rbac";
-import { apiOk, notFound } from "@/lib/api-response";
+import { apiError, apiOk, notFound } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { writeAudit } from "@/lib/audit";
 import { decimalToNumber, formatInr } from "@/lib/format";
@@ -20,7 +20,18 @@ export async function GET(_req: Request, ctx: Ctx) {
   });
   if (!payment) return notFound();
 
-  return apiOk({ payment });
+  return apiOk({
+    payment: {
+      ...payment,
+      amount: decimalToNumber(payment.amount),
+      receipt: payment.receipt
+        ? {
+            ...payment.receipt,
+            amountPaid: decimalToNumber(payment.receipt.amountPaid),
+          }
+        : null,
+    },
+  });
 }
 
 export async function DELETE(_req: Request, ctx: Ctx) {
@@ -37,7 +48,14 @@ export async function DELETE(_req: Request, ctx: Ctx) {
   });
   if (!existing) return notFound();
 
-  // Receipt will cascade delete automatically per schema
+  if (existing.receipt) {
+    return apiError(
+      "CONFLICT",
+      `Cannot hard-delete payment with official issued receipt '${existing.receipt.receiptNumber}'. To adjust or correct ledger balances, record an 'adjustment' or 'deduction' transaction instead to maintain full accounting and audit compliance.`,
+      400,
+    );
+  }
+
   await prisma.payment.delete({ where: { id } });
 
   await writeAudit({
@@ -45,7 +63,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     action: "payment.delete",
     entityType: "payment",
     entityId: id,
-    targetLabel: `${existing.staff.staffCode} ${existing.staff.fullName} - ${formatInr(decimalToNumber(existing.amount))} (${existing.receipt?.receiptNumber ?? "No Receipt"})`,
+    targetLabel: `${existing.staff.staffCode} ${existing.staff.fullName} - ${formatInr(decimalToNumber(existing.amount))} (No Receipt)`,
   });
 
   return apiOk({ success: true, message: "Payment transaction voided and deleted successfully" });

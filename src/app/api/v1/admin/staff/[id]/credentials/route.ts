@@ -9,7 +9,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const credentialsSchema = z.object({
   email: z.string().email().optional(),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters").optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -76,6 +76,10 @@ export async function POST(request: Request, ctx: Ctx) {
     return apiError("VALIDATION_ERROR", "Login Email address is required.", 400);
   }
 
+  if (!staff.user && (!password || password.trim().length < 6)) {
+    return apiError("VALIDATION_ERROR", "Password must be at least 6 characters for a new login account.", 400);
+  }
+
   // Check if another user already has this email
   const existingEmailUser = await prisma.user.findFirst({
     where: {
@@ -93,7 +97,7 @@ export async function POST(request: Request, ctx: Ctx) {
     return apiError("INTERNAL_ERROR", "Staff role not configured in system", 500);
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = password?.trim() ? await bcrypt.hash(password.trim(), 10) : undefined;
 
   if (staff.user) {
     // Update existing user password & details
@@ -101,7 +105,9 @@ export async function POST(request: Request, ctx: Ctx) {
       where: { id: staff.user.id },
       data: {
         email: loginEmail,
-        passwordHash,
+        ...(passwordHash
+          ? { passwordHash, tokenVersion: { increment: 1 } as unknown as number }
+          : {}),
         isActive,
       },
       select: { id: true, email: true, isActive: true, lastLoginAt: true },
@@ -122,6 +128,10 @@ export async function POST(request: Request, ctx: Ctx) {
       actionTaken: "reset",
     });
   } else {
+    if (!passwordHash) {
+      return apiError("VALIDATION_ERROR", "Password is required for a new account.", 400);
+    }
+
     // Create new login account for this staff
     const newUser = await prisma.user.create({
       data: {
@@ -207,13 +217,28 @@ export async function DELETE(_req: Request, ctx: Ctx) {
     return apiError("NOT_FOUND", "No portal login account exists for this employee", 404);
   }
 
-  await prisma.user.delete({ where: { id: staff.user.id } });
+  const userId = staff.user.id;
+  await prisma.$transaction([
+    prisma.auditLog.updateMany({
+      where: { actorUserId: userId },
+      data: { actorUserId: null },
+    }),
+    prisma.attendanceRecord.updateMany({
+      where: { markedById: userId },
+      data: { markedById: null },
+    }),
+    prisma.leaveRequest.updateMany({
+      where: { reviewedById: userId },
+      data: { reviewedById: null },
+    }),
+    prisma.user.delete({ where: { id: userId } }),
+  ]);
 
   await writeAudit({
     actorUserId: admin.id,
     action: "user.delete",
     entityType: "user",
-    entityId: staff.user.id,
+    entityId: userId,
     targetLabel: `${staff.staffCode} login credentials revoked`,
   });
 

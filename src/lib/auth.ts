@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import {
@@ -25,10 +26,10 @@ export type AuthUser = {
   isActive: boolean;
 };
 
-export async function getSession() {
+export const getSession = cache(async () => {
   const jar = await cookies();
   return decodeSession(jar.get(COOKIE_NAME)?.value);
-}
+});
 
 export async function getAuthUser(): Promise<AuthUser | null> {
   const session = await getSession();
@@ -46,6 +47,15 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   });
 
   if (!user || !user.isActive) return null;
+
+  // Invalidate session across all devices if tokenVersion does not match (e.g. after password reset)
+  if (
+    session.tokenVersion !== undefined &&
+    (user as { tokenVersion?: number }).tokenVersion !== undefined &&
+    (user as { tokenVersion?: number }).tokenVersion !== session.tokenVersion
+  ) {
+    return null;
+  }
 
   return {
     id: user.id,

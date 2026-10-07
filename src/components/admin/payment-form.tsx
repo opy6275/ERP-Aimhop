@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { CreditCard, Mail, AlertCircle, CheckCircle2, Check, FileText, AlertTriangle } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
 
 type StaffOpt = {
   id: string;
@@ -15,6 +17,7 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const now = new Date();
   const defaultPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -66,18 +69,18 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
         return;
       }
 
-      if (data.data?.emailResult?.unconfigured) {
-        alert(
-          "Payment recorded successfully! Note: Salary slip was not emailed because Free SMTP is not yet configured. You can set it up anytime under Admin > Settings.",
-        );
-      } else if (data.data?.emailResult?.error) {
-        alert(
-          `Payment recorded, but email delivery issue: ${data.data.emailResult.error}`,
-        );
-      }
+      const emailRes = data.emailResult || data.data?.emailResult;
+      const successMsg = emailRes?.unconfigured
+        ? "Payment recorded successfully! Note: Salary slip was not emailed because SMTP is not configured."
+        : emailRes?.error
+        ? `Payment recorded! Note on email delivery: ${emailRes.error}`
+        : "Payment recorded successfully! Generating official receipt...";
 
-      router.push("/admin/payments");
-      router.refresh();
+      setSuccess(successMsg);
+      setTimeout(() => {
+        router.push("/admin/payments");
+        router.refresh();
+      }, 1000);
     } catch {
       setError("Network communication error. Please try again.");
     } finally {
@@ -135,10 +138,8 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
       {/* Payment Details */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-5">
         <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-          <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
+          <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
+            <CreditCard size={18} />
           </div>
           <div>
             <h3 className="text-base font-semibold text-slate-900">Transaction Particulars</h3>
@@ -241,7 +242,7 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
             <input
               name="note"
               className={inputClass}
-              placeholder="e.g. Monthly salary disbursed via HDFC Corporate Banking"
+              placeholder="Disbursement remarks or transaction reference"
             />
           </div>
         </div>
@@ -250,9 +251,7 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
         <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-600">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <FileText size={18} />
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-800">Generate Official Payment Receipt</p>
@@ -267,20 +266,15 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
           />
         </div>
 
-        {/* Email Salary Slip Option (100% Free) */}
-        <div className="rounded-xl border border-blue-200/80 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-blue-50/70 p-4 space-y-3">
+        {/* Email Salary Slip Option */}
+        <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-blue-600 text-white shadow-2xs">
-                <span className="text-base leading-none">✉️</span>
+                <Mail size={16} />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-slate-900">Email Salary Slip to Employee</p>
-                  <span className="rounded-full bg-emerald-600 px-2 py-0.2 text-[10px] font-bold text-white uppercase tracking-wider">
-                    Free
-                  </span>
-                </div>
+                <p className="text-sm font-bold text-slate-900">Email Salary Slip to Employee</p>
                 <p className="text-xs text-slate-600">
                   Sends full payment voucher &amp; salary particulars directly to staff inbox.
                 </p>
@@ -307,8 +301,9 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
                 className="flex-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
               {!customEmail && (
-                <span className="text-[11px] text-amber-700 font-medium">
-                  ⚠️ No email on profile. Enter email above.
+                <span className="text-[11px] text-amber-700 font-medium flex items-center gap-1">
+                  <AlertTriangle size={12} className="shrink-0" />
+                  No email on profile. Enter email above.
                 </span>
               )}
             </div>
@@ -317,44 +312,37 @@ export function PaymentForm({ staff }: { staff: StaffOpt[] }) {
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700 flex items-center gap-2.5">
-          <svg className="w-5 h-5 shrink-0 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-800 flex items-center gap-2.5">
+          <AlertCircle size={16} className="text-rose-600 shrink-0" />
           <span>{error}</span>
         </div>
       ) : null}
 
+      {success ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-800 flex items-center gap-2.5">
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+          <span>{success}</span>
+        </div>
+      ) : null}
+
       <div className="flex items-center gap-3 pt-2">
-        <button
+        <Button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 transition-colors disabled:opacity-60"
+          loading={loading}
+          size="lg"
+          className="shadow-2xs"
         >
-          {loading ? (
-            <>
-              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-              </svg>
-              <span>Processing Transaction…</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span>Record Payment & Issue Receipt</span>
-            </>
-          )}
-        </button>
-        <button
+          <Check size={16} />
+          <span>Record Payment & Issue Receipt</span>
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           onClick={() => router.back()}
-          className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

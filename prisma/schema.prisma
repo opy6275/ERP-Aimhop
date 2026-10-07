@@ -1,12 +1,13 @@
-// aimhop-ERP — local SQLite (Docker/Postgres baad me production ke liye)
+// aimhop-ERP — Authoritative Production PostgreSQL Schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum StaffStatus {
@@ -157,6 +158,7 @@ model User {
   roleId       String    @map("role_id")
   staffId      String?   @unique @map("staff_id")
   isActive        Boolean   @default(true) @map("is_active")
+  tokenVersion    Int       @default(1) @map("token_version")
   lastLoginAt     DateTime? @map("last_login_at")
   resetOtpHash    String?   @map("reset_otp_hash")
   resetOtpExpires DateTime? @map("reset_otp_expires")
@@ -178,11 +180,12 @@ model AttendanceRecord {
   id         String           @id @default(cuid())
   staffId    String           @map("staff_id")
   date       DateTime
-  status     AttendanceStatus
-  note       String?
-  markedById String?          @map("marked_by")
-  createdAt  DateTime         @default(now()) @map("created_at")
-  updatedAt  DateTime         @updatedAt @map("updated_at")
+  status         AttendanceStatus
+  approvalStatus String           @default("approved") @map("approval_status")
+  note           String?
+  markedById     String?          @map("marked_by")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
 
   staff    Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
   markedBy User? @relation("AttendanceMarkedBy", fields: [markedById], references: [id])

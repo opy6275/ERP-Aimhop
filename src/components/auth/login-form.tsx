@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Mail,
   Lock,
@@ -11,7 +13,9 @@ import {
   ArrowRight,
   Shield,
   CheckCircle2,
+  AlertCircle,
   Key,
+  IdCard,
   X,
 } from "@/components/ui/icons";
 
@@ -20,8 +24,8 @@ type LoginRole = "admin" | "staff";
 export function LoginForm() {
   const router = useRouter();
   const [roleMode, setRoleMode] = useState<LoginRole>("admin");
-  const [identifier, setIdentifier] = useState("superadmin@aimhop.com");
-  const [password, setPassword] = useState("Admin@123");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -142,15 +146,8 @@ export function LoginForm() {
     setRoleMode(newMode);
     setError(null);
     setSuccess(null);
-
-    // Pre-populate with typical credentials for testing
-    if (newMode === "admin") {
-      setIdentifier("superadmin@aimhop.com");
-      setPassword("Admin@123");
-    } else {
-      setIdentifier("staff@aimhop.com");
-      setPassword("Staff@123");
-    }
+    setIdentifier("");
+    setPassword("");
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -203,54 +200,54 @@ export function LoginForm() {
     }
   }
 
-
-
   return (
     <div className="w-full">
       {/* Role Switcher Tabs */}
-      <div className="mb-4">
-        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200/80">
+      <div className="mb-5">
+        <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-slate-100 border border-slate-200">
           <button
             type="button"
             onClick={() => handleRoleSwitch("admin")}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={cn(
+              "flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer",
               roleMode === "admin"
-                ? "bg-white text-orange-600 shadow-xs border border-slate-200/60"
+                ? "bg-white text-blue-700 shadow-2xs font-semibold border border-slate-200/80"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+            )}
           >
-            <Shield size={14} />
-            <span>Admin</span>
+            <Shield size={14} className={roleMode === "admin" ? "text-blue-600" : "text-slate-400"} />
+            <span>Administrator</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleRoleSwitch("staff")}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={cn(
+              "flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-medium transition-colors cursor-pointer",
               roleMode === "staff"
-                ? "bg-white text-orange-600 shadow-xs border border-slate-200/60"
+                ? "bg-white text-blue-700 shadow-2xs font-semibold border border-slate-200/80"
                 : "text-slate-600 hover:text-slate-900"
-            }`}
+            )}
           >
-            <User size={14} />
-            <span>Staff</span>
+            <User size={14} className={roleMode === "staff" ? "text-blue-600" : "text-slate-400"} />
+            <span>Staff Portal</span>
           </button>
         </div>
       </div>
 
       {/* Main Authentication Form */}
-      <form onSubmit={onSubmit} className="space-y-3.5">
-        {/* Email or Username */}
+      <form onSubmit={onSubmit} className="space-y-4">
+        {/* Email or Identifier */}
         <div>
           <label
             htmlFor="login-identifier"
-            className="block text-xs font-medium text-slate-700 mb-1"
+            className="block text-sm font-medium text-slate-700 mb-1.5"
           >
-            Email Address
+            {roleMode === "admin" ? "Administrator Email Address" : "Staff Email Address or Staff ID"}
           </label>
           <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-              <Mail size={15} />
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              {roleMode === "admin" ? <Mail size={16} /> : <IdCard size={16} />}
             </div>
             <input
               id="login-identifier"
@@ -261,25 +258,39 @@ export function LoginForm() {
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder={
                 roleMode === "admin"
-                  ? "admin@aimhop.com"
-                  : "staff@aimhop.com or STAFF-00001"
+                  ? "admin@company.com"
+                  : "staff@company.com or STAFF-00001"
               }
-              className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+              className="flex h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3.5 py-2 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus-visible:outline-hidden focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50"
             />
           </div>
+          <p className="text-[11px] text-slate-500 mt-1">
+            {roleMode === "admin"
+              ? "Enter your administrator email address"
+              : "Sign in with your corporate email or employee code"}
+          </p>
         </div>
 
         {/* Password */}
         <div>
-          <label
-            htmlFor="login-password"
-            className="block text-xs font-medium text-slate-700 mb-1"
-          >
-            Password
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label
+              htmlFor="login-password"
+              className="block text-sm font-medium text-slate-700"
+            >
+              Password
+            </label>
+            <button
+              type="button"
+              onClick={openForgotModal}
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+            >
+              Forgot password?
+            </button>
+          </div>
           <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-              <Lock size={15} />
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              <Lock size={16} />
             </div>
             <input
               id="login-password"
@@ -289,7 +300,7 @@ export function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-9 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+              className="flex h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-10 py-2 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus-visible:outline-hidden focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500/20 disabled:cursor-not-allowed disabled:bg-slate-50"
             />
             <button
               type="button"
@@ -297,90 +308,56 @@ export function LoginForm() {
               className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
         </div>
 
-        {/* Remember Me & Forgot Password */}
+        {/* Remember Me */}
         <div className="flex items-center justify-between pt-0.5">
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500 accent-orange-600"
+              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
             />
-            <span className="text-xs text-slate-600">Remember me</span>
+            <span className="text-xs text-slate-600">Keep me signed in on this device</span>
           </label>
-
-          <button
-            type="button"
-            onClick={openForgotModal}
-            className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:underline cursor-pointer"
-          >
-            Forgot password?
-          </button>
         </div>
 
         {/* Inline Feedback Alerts */}
         {error ? (
-          <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-2.5 text-xs text-rose-800 flex items-start gap-2">
-            <span className="shrink-0 font-bold">⚠️</span>
-            <div className="leading-tight">{error}</div>
+          <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex items-start gap-2.5">
+            <AlertCircle size={16} className="text-rose-600 shrink-0 mt-0.5" />
+            <div className="leading-snug">{error}</div>
           </div>
         ) : null}
 
         {success ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/90 p-2.5 text-xs text-emerald-800 flex items-center gap-2">
-            <CheckCircle2 size={14} className="shrink-0 text-emerald-600" />
-            <div className="leading-tight">{success}</div>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-center gap-2.5">
+            <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
+            <div className="leading-snug">{success}</div>
           </div>
         ) : null}
 
         {/* Submit Button */}
-        <button
+        <Button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-orange-600 py-2.5 px-4 text-xs sm:text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer pt-2"
+          loading={loading}
+          size="lg"
+          className="w-full h-11 text-sm font-semibold rounded-lg shadow-2xs mt-2"
         >
-          {loading ? (
-            <>
-              <svg
-                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              <span>Signing in…</span>
-            </>
-          ) : (
-            <>
-              <span>Sign In</span>
-              <ArrowRight size={14} />
-            </>
-          )}
-        </button>
+          <span>Sign In</span>
+          <ArrowRight size={15} />
+        </Button>
       </form>
 
       {/* Forgot Password Modal - Email OTP Based */}
       {forgotModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-fadeIn">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl border border-slate-200 relative">
             {/* Close Button */}
             <button
               type="button"
@@ -390,22 +367,22 @@ export function LoginForm() {
                 setResetSuccess(null);
                 setDevOtpNote(null);
               }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
               aria-label="Close modal"
             >
               <X size={18} />
             </button>
 
             {/* Header */}
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-orange-600 mx-auto mb-3">
-              <Key size={20} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600 border border-blue-100 mx-auto mb-3">
+              <Key size={18} />
             </div>
-            <h3 className="text-base font-bold text-slate-900 text-center">
+            <h3 className="text-base font-semibold text-slate-900 text-center">
               Reset Your Password
             </h3>
             <p className="mt-1 text-xs text-slate-500 text-center">
               {resetStep === 1
-                ? "Enter your registered email to receive a 6-digit verification code."
+                ? "Enter your registered email address to receive a 6-digit verification code."
                 : `Enter the 6-digit code sent to ${resetEmail} and your new password.`}
             </p>
 
@@ -415,13 +392,13 @@ export function LoginForm() {
                 <div>
                   <label
                     htmlFor="reset-email-input"
-                    className="block text-xs font-semibold text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 mb-1.5"
                   >
                     Registered Email Address
                   </label>
                   <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                      <Mail size={15} />
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                      <Mail size={16} />
                     </div>
                     <input
                       id="reset-email-input"
@@ -429,43 +406,37 @@ export function LoginForm() {
                       required
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="e.g. admin@aimhop.com or staff@aimhop.com"
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+                      placeholder="name@company.com"
+                      className="flex h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3.5 py-2 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus-visible:outline-hidden focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500/20"
                     />
                   </div>
                 </div>
 
                 {resetError && (
-                  <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-2.5 text-xs text-rose-800 leading-tight">
-                    {resetError}
+                  <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex items-start gap-2">
+                    <AlertCircle size={15} className="text-rose-600 shrink-0 mt-0.5" />
+                    <span>{resetError}</span>
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-1">
-                  <button
+                <div className="flex gap-2.5 pt-2">
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setForgotModalOpen(false)}
-                    className="w-1/3 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                    className="w-1/3"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={resetLoading}
-                    className="flex-1 rounded-xl bg-orange-600 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-[0.99] disabled:opacity-60 cursor-pointer flex items-center justify-center gap-1.5"
+                    loading={resetLoading}
+                    className="flex-1"
                   >
-                    {resetLoading ? (
-                      <>
-                        <span className="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full mr-1.5" />
-                        <span>Sending OTP…</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Send Email OTP</span>
-                        <ArrowRight size={14} />
-                      </>
-                    )}
-                  </button>
+                    <span>Send Verification Code</span>
+                    <ArrowRight size={15} />
+                  </Button>
                 </div>
               </form>
             )}
@@ -473,9 +444,9 @@ export function LoginForm() {
             {/* Step 2: Enter OTP & New Password */}
             {resetStep === 2 && (
               <form onSubmit={handleResetPassword} className="mt-5 space-y-3.5">
-                <div className="flex items-center justify-between text-xs bg-slate-50 border border-slate-200/80 rounded-lg p-2 text-slate-600">
-                  <span className="truncate max-w-[200px]">
-                    To: <strong className="text-slate-800">{resetEmail}</strong>
+                <div className="flex items-center justify-between text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-slate-600">
+                  <span className="truncate max-w-[220px]">
+                    Recipient: <strong className="text-slate-800 font-semibold">{resetEmail}</strong>
                   </span>
                   <button
                     type="button"
@@ -485,22 +456,22 @@ export function LoginForm() {
                       setResetError(null);
                       setResetSuccess(null);
                     }}
-                    className="text-orange-600 hover:underline font-medium cursor-pointer"
+                    className="text-blue-600 hover:underline font-medium cursor-pointer"
                   >
                     Change Email
                   </button>
                 </div>
 
-                {/* Dev Mode OTP Indicator for testing */}
+                {/* Dev OTP Helper */}
                 {devOtpNote && (
-                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 flex items-center justify-between">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-700 flex items-center justify-between">
                     <span>
-                      Dev Code: <strong className="font-mono text-sm tracking-wider text-amber-950">{devOtpNote}</strong>
+                      Dev OTP: <strong className="font-mono text-sm tracking-wider text-slate-900">{devOtpNote}</strong>
                     </span>
                     <button
                       type="button"
                       onClick={() => setResetOtp(devOtpNote)}
-                      className="text-[11px] bg-amber-200/80 hover:bg-amber-300 px-2 py-0.5 rounded font-semibold cursor-pointer"
+                      className="text-xs bg-white border border-slate-200 hover:bg-slate-50 px-2 py-0.5 rounded font-medium text-slate-700 cursor-pointer shadow-2xs"
                     >
                       Auto-fill
                     </button>
@@ -511,7 +482,7 @@ export function LoginForm() {
                 <div>
                   <label
                     htmlFor="reset-otp-input"
-                    className="block text-xs font-semibold text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 mb-1"
                   >
                     6-Digit Verification Code
                   </label>
@@ -523,7 +494,7 @@ export function LoginForm() {
                     value={resetOtp}
                     onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, ""))}
                     placeholder="123456"
-                    className="w-full text-center tracking-widest font-mono text-base font-bold rounded-lg border border-slate-200 bg-slate-50/50 py-2 text-slate-900 placeholder:text-slate-300 placeholder:font-normal placeholder:tracking-normal outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+                    className="w-full text-center tracking-widest font-mono text-base font-bold rounded-lg border border-slate-200 bg-white py-2 text-slate-900 placeholder:text-slate-300 placeholder:font-normal placeholder:tracking-normal outline-none transition hover:border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
@@ -531,7 +502,7 @@ export function LoginForm() {
                 <div>
                   <label
                     htmlFor="reset-new-password"
-                    className="block text-xs font-semibold text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 mb-1"
                   >
                     New Password
                   </label>
@@ -546,7 +517,7 @@ export function LoginForm() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="At least 8 characters"
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-9 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+                      className="flex h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-9 py-2 text-xs text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus-visible:outline-hidden focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500/20"
                     />
                     <button
                       type="button"
@@ -562,7 +533,7 @@ export function LoginForm() {
                 <div>
                   <label
                     htmlFor="reset-confirm-password"
-                    className="block text-xs font-semibold text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 mb-1"
                   >
                     Confirm New Password
                   </label>
@@ -577,50 +548,44 @@ export function LoginForm() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Re-enter new password"
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15"
+                      className="flex h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-xs text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus-visible:outline-hidden focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500/20"
                     />
                   </div>
                 </div>
 
                 {resetError && (
-                  <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-2.5 text-xs text-rose-800 leading-tight">
-                    {resetError}
+                  <div className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800 flex items-start gap-2">
+                    <AlertCircle size={15} className="text-rose-600 shrink-0 mt-0.5" />
+                    <span>{resetError}</span>
                   </div>
                 )}
 
                 {resetSuccess && (
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/90 p-2.5 text-xs text-emerald-800 flex items-center gap-2">
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-800 flex items-center gap-2">
                     <CheckCircle2 size={15} className="shrink-0 text-emerald-600" />
                     <span>{resetSuccess}</span>
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-1">
-                  <button
+                <div className="flex gap-2.5 pt-2">
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={handleRequestOtp}
                     disabled={resetLoading}
-                    className="w-1/3 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                    className="w-1/3"
                   >
                     Resend Code
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={resetLoading}
-                    className="flex-1 rounded-xl bg-orange-600 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-[0.99] disabled:opacity-60 cursor-pointer flex items-center justify-center gap-1.5"
+                    loading={resetLoading}
+                    className="flex-1"
                   >
-                    {resetLoading ? (
-                      <>
-                        <span className="inline-block animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full mr-1.5" />
-                        <span>Updating Password…</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Reset Password</span>
-                        <CheckCircle2 size={14} />
-                      </>
-                    )}
-                  </button>
+                    <span>Update Password</span>
+                    <CheckCircle2 size={15} />
+                  </Button>
                 </div>
               </form>
             )}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, AlertCircle } from "@/components/ui/icons";
+import { Check, X, AlertCircle, Info } from "@/components/ui/icons";
 
 interface AdminLeaveReviewModalProps {
   leave: {
@@ -47,8 +47,8 @@ export function AdminLeaveReviewModal({
       });
 
       const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error?.message || `Failed to ${actionType} leave`);
+      if (!res.ok) {
+        throw new Error(data.message || data.error?.message || `Failed to ${actionType} leave`);
       }
 
       router.refresh();
@@ -113,9 +113,10 @@ export function AdminLeaveReviewModal({
           </div>
 
           {isApprove && (
-            <p className="text-xs text-emerald-700 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-100">
-              ℹ️ Approving this request will automatically synchronize attendance records and mark shift status as <strong>&ldquo;leave&rdquo;</strong> for these dates.
-            </p>
+            <div className="flex items-start gap-2 text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
+              <Info size={16} className="shrink-0 text-emerald-600 mt-0.5" />
+              <span>Approving this request will automatically synchronize attendance records and mark shift status as <strong>&ldquo;leave&rdquo;</strong> for these dates.</span>
+            </div>
           )}
 
           <div>
@@ -125,7 +126,7 @@ export function AdminLeaveReviewModal({
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={isApprove ? "e.g. Approved as per company policy..." : "e.g. Rejected due to critical project deadline..."}
+              placeholder={isApprove ? "Approval remarks (optional)..." : "Reason for rejection (required)..."}
               rows={3}
               required={!isApprove}
               className="w-full rounded-xl border border-slate-200 p-3 text-sm text-slate-800 transition focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"

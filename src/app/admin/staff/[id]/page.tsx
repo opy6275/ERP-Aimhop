@@ -10,6 +10,16 @@ import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate, formatDateWithAge, formatInr, formatMonthLabel } from "@/lib/format";
 import { StaffCredentialsModal } from "@/components/admin/staff-credentials-modal";
+import {
+  Pencil,
+  CalendarCheck,
+  Plus,
+  User,
+  Building2,
+  Key,
+  AlertCircle,
+  Calendar,
+} from "@/components/ui/icons";
 
 export default async function StaffDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { session, roleLabel } = await requirePageSession({ adminOnly: true });
@@ -70,11 +80,10 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
       />
 
       {/* Staff Profile Header Card */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm mb-6">
-        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500" />
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-xs mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-xl font-bold text-white shadow-md shadow-blue-500/20">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-50 font-mono text-xl font-bold text-blue-700 border border-blue-200">
               {initials}
             </div>
             <div>
@@ -109,31 +118,24 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             />
             <Link
               href={`/admin/staff/${staff.id}/edit`}
-              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
             >
-              <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Edit Details
+              <Pencil size={13} className="text-slate-500" />
+              <span>Edit Details</span>
             </Link>
             <Link
               href="/admin/attendance"
-              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
             >
-
-              <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Mark Attendance
+              <CalendarCheck size={13} className="text-slate-500" />
+              <span>Mark Attendance</span>
             </Link>
             <Link
               href="/admin/payments/new"
-              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+              className="inline-flex flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-colors"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Pay Salary
+              <Plus size={13} />
+              <span>Pay Salary</span>
             </Link>
           </div>
         </div>
@@ -175,11 +177,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
         <Panel
           title="Personal & Contact Details"
           description="Direct contact and demographic information"
-          icon={
-            <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          }
+          icon={<User size={18} className="text-blue-600" />}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
@@ -209,11 +207,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
         <Panel
           title="Employment & Banking Details"
           description="Designation, payroll scheme and bank account parameters"
-          icon={
-            <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          }
+          icon={<Building2 size={18} className="text-blue-600" />}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
@@ -248,11 +242,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
           <Panel
             title="Portal Login & Access Credentials"
             description="Manage employee login credentials, password updates, and self-service portal authorization"
-            icon={
-              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            }
+            icon={<Key size={18} className="text-blue-600" />}
             action={
               <StaffCredentialsModal
                 staffId={staff.id}
@@ -294,12 +284,10 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-amber-50/60 border border-amber-200/80">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-amber-50/60 border border-amber-200">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-amber-100 text-amber-700">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
+                    <AlertCircle size={20} />
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-amber-900">No Portal Login Configured</h4>
@@ -350,9 +338,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-500">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                      <Calendar size={16} />
                     </div>
                     <span className="text-sm font-medium text-slate-800">{formatDate(a.date)}</span>
                   </div>

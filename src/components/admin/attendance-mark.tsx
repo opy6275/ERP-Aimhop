@@ -99,7 +99,7 @@ export function AttendanceMark({
   return (
     <div className="space-y-6">
       {/* Date & Bulk Action Toolbar */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/90 bg-slate-50/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -162,7 +162,7 @@ export function AttendanceMark({
             type="button"
             onClick={save}
             disabled={loading || list.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
           >
             {loading ? (
               <>
@@ -211,7 +211,7 @@ export function AttendanceMark({
       ) : null}
 
       {/* Staff Marking Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
+      <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-slate-100 bg-slate-50/90 text-xs font-semibold tracking-wider text-slate-500 uppercase">
@@ -250,7 +250,7 @@ export function AttendanceMark({
                     </td>
                     <td className="px-5 py-3.5">
                       {/* Segmented Button Group */}
-                      <div className="inline-flex rounded-xl border border-slate-200/90 bg-slate-100/70 p-1 gap-1">
+                      <div className="inline-flex flex-wrap rounded-lg border border-slate-200/90 bg-slate-100/70 p-0.5 gap-0.5 sm:p-1 sm:gap-1">
                         {STATUS_OPTIONS.map((opt) => {
                           const isSelected = currentStatus === opt.value;
                           return (
@@ -258,7 +258,7 @@ export function AttendanceMark({
                               key={opt.value}
                               type="button"
                               onClick={() => setRows((prev) => ({ ...prev, [s.id]: opt.value }))}
-                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                              className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-all cursor-pointer sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs ${
                                 isSelected
                                   ? opt.activeClass
                                   : "text-slate-600 hover:text-slate-900 hover:bg-white/60"

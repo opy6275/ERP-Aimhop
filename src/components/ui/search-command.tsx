@@ -15,6 +15,8 @@ import {
   Activity,
   Settings,
   UserPlus,
+  Search,
+  X,
 } from "@/components/ui/icons";
 
 type SearchOption = {
@@ -92,13 +94,10 @@ export function SearchCommand({ variant }: { variant: "admin" | "staff" }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-slate-50/80 px-3 py-1.5 text-xs text-slate-500 shadow-2xs transition hover:border-slate-300 hover:bg-slate-100/70 hover:text-slate-900 cursor-pointer"
+        className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-xs text-slate-500 shadow-2xs transition hover:border-slate-300 hover:bg-slate-100/70 hover:text-slate-900 cursor-pointer"
         aria-label="Open search command"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
+        <Search size={14} className="text-slate-400" />
         <span className="hidden sm:inline font-medium">Quick search…</span>
         <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 shadow-2xs">
           <span>⌘</span>K
@@ -112,27 +111,25 @@ export function SearchCommand({ variant }: { variant: "admin" | "staff" }) {
             onClick={() => setOpen(false)}
           />
 
-          <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl transition-all">
+          <div className="relative w-full max-w-xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl transition-all">
             {/* Search Input */}
             <div className="flex items-center border-b border-slate-100 px-4 py-3">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 mr-3 shrink-0">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
+              <Search size={16} className="text-slate-400 mr-3 shrink-0" />
               <input
                 type="text"
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Type a destination or action (e.g. Staff, Attendance, Payments)…"
+                placeholder="Type a destination or command..."
                 className="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 outline-none"
               />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                aria-label="Close search"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
@@ -150,10 +147,10 @@ export function SearchCommand({ variant }: { variant: "admin" | "staff" }) {
                       key={item.id}
                       type="button"
                       onClick={() => navigateTo(item.href)}
-                      className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition hover:bg-blue-50/80 hover:text-blue-900 group cursor-pointer"
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition hover:bg-blue-50/80 hover:text-blue-900 group cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600 group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors">
                           <Icon size={16} />
                         </div>
                         <div>
@@ -178,7 +175,7 @@ export function SearchCommand({ variant }: { variant: "admin" | "staff" }) {
 
             <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/80 px-4 py-2 text-[11px] text-slate-400">
               <span>Press <kbd className="font-mono font-semibold text-slate-600">ESC</kbd> to close</span>
-              <span>AimHop CRM Navigation</span>
+              <span>AimHop ERP Navigation</span>
             </div>
           </div>
         </div>

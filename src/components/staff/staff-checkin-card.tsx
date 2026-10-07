@@ -2,19 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Clock, CalendarCheck, Sparkles, MapPin } from "@/components/ui/icons";
+import { CheckCircle2, Clock, CalendarCheck, MapPin } from "@/components/ui/icons";
 
 export function StaffCheckinCard({
   todayStatus,
+  todayApprovalStatus,
   todayNote,
   employeeName,
 }: {
   todayStatus: string | null;
+  todayApprovalStatus?: string | null;
   todayNote: string | null;
   employeeName: string;
 }) {
   const router = useRouter();
   const [currentStatus, setCurrentStatus] = useState<string | null>(todayStatus);
+  const [currentApprovalStatus, setCurrentApprovalStatus] = useState<string | null>(
+    todayApprovalStatus || (todayStatus ? "approved" : null),
+  );
   const [note, setNote] = useState<string>(todayNote || "");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
@@ -62,8 +67,9 @@ export function StaffCheckinCard({
         return;
       }
       setCurrentStatus(statusToSet);
+      setCurrentApprovalStatus("pending");
       setMessage({
-        text: `Shift recorded successfully as ${statusToSet.toUpperCase().replace("_", " ")}!`,
+        text: `Check-in request for ${statusToSet.toUpperCase().replace("_", " ")} submitted successfully! Awaiting Admin Approval.`,
         success: true,
       });
       setShowOptions(false);
@@ -76,23 +82,23 @@ export function StaffCheckinCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-sm mb-7 transition-all">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs mb-7">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
         <div className="flex items-center gap-3.5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-50 to-indigo-50 text-blue-600 border border-blue-200/60 shadow-xs">
-            <CalendarCheck size={24} />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+            <CalendarCheck size={22} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900">
-                Shift Telemetry & Check-In Desk
+              <h3 className="text-base font-bold tracking-tight text-slate-900">
+                Daily Attendance Check-In
               </h3>
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 uppercase tracking-wider">
-                <Sparkles size={10} /> Active Roster
+              <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                Shift: 09:30 AM – 06:30 PM
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              {todayStr} · <span className="text-slate-700 font-semibold">Standard Shift (09:30 AM - 06:30 PM)</span>
+              {todayStr}
             </p>
           </div>
         </div>
@@ -100,7 +106,7 @@ export function StaffCheckinCard({
         {/* Live Digital Clock & Status Badge */}
         <div className="flex items-center gap-3 self-start sm:self-auto">
           {liveTime && (
-            <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-1.5 font-mono text-xs font-bold text-slate-700 shadow-2xs">
+            <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 font-mono text-xs font-semibold text-slate-700">
               <Clock size={13} className="text-slate-400" />
               <span>{liveTime}</span>
               <span className="text-[10px] text-slate-400 font-sans">IST</span>
@@ -108,72 +114,126 @@ export function StaffCheckinCard({
           )}
 
           {currentStatus ? (
-            <span className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300/80 shadow-2xs">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              {currentStatus.replace("_", " ")}
-            </span>
+            currentApprovalStatus === "pending" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300">
+                <Clock size={13} className="text-amber-600 animate-pulse" />
+                Pending Approval
+              </span>
+            ) : currentApprovalStatus === "rejected" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-rose-50 text-rose-800 border border-rose-300">
+                <span className="h-2 w-2 rounded-full bg-rose-500" />
+                Rejected
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                {currentStatus.replace("_", " ")}
+              </span>
+            )
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300/80 shadow-2xs">
-              <span className="h-2 w-2 rounded-full bg-amber-500" />
-              Pending Check-In
+            <span className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+              <span className="h-2 w-2 rounded-full bg-slate-400" />
+              Not Checked In
             </span>
           )}
         </div>
       </div>
 
-      <div className="pt-6">
+      <div className="pt-5">
         {currentStatus ? (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-emerald-50/40 to-white border border-emerald-200/80 shadow-2xs">
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
-                <CheckCircle2 size={22} />
+          currentApprovalStatus === "pending" ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-amber-50/70 border border-amber-200">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white shadow-xs">
+                  <Clock size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Check-in Submitted: <span className="uppercase text-amber-800 font-bold">{currentStatus.replace("_", " ")}</span> (Pending Admin Approval)
+                  </p>
+                  <p className="text-xs text-amber-900/80 font-medium mt-0.5">
+                    Your attendance request has been forwarded to management. It will reflect in your official register once accepted.
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold text-emerald-950">
-                  Duty status verified: You are checked in as <span className="uppercase text-emerald-700">{currentStatus.replace("_", " ")}</span>
-                </p>
-                <p className="text-xs text-emerald-700/90 font-medium mt-0.5">
-                  Logged for {employeeName} {todayNote ? `· Remark: "${todayNote}"` : "· Normal workplace presence"}
-                </p>
+
+              <button
+                type="button"
+                onClick={() => setShowOptions(!showOptions)}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline cursor-pointer self-start sm:self-auto transition"
+              >
+                {showOptions ? "Hide options" : "Modify request or note"}
+              </button>
+            </div>
+          ) : currentApprovalStatus === "rejected" ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-rose-50/70 border border-rose-200">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-600 text-white shadow-xs">
+                  <Clock size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-rose-950">
+                    Attendance Request Rejected by Admin
+                  </p>
+                  <p className="text-xs text-rose-700 font-medium mt-0.5">
+                    This shift has been marked as absent by the administrator. Contact HR if you have any questions.
+                  </p>
+                </div>
               </div>
             </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
+                  <CheckCircle2 size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Attendance Approved as <span className="uppercase text-emerald-700 font-bold">{currentStatus.replace("_", " ")}</span>
+                  </p>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Logged for {employeeName} {todayNote ? `· Note: "${todayNote}"` : ""}
+                  </p>
+                </div>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setShowOptions(!showOptions)}
-              className="text-xs font-bold text-emerald-800 hover:text-emerald-950 underline cursor-pointer self-start sm:self-auto transition"
-            >
-              {showOptions ? "Close adjustment" : "Adjust status / add location note"}
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => setShowOptions(!showOptions)}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline cursor-pointer self-start sm:self-auto transition"
+              >
+                {showOptions ? "Hide adjustment options" : "Adjust status or add note"}
+              </button>
+            </div>
+          )
         ) : (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-50 via-blue-50/20 to-white border border-slate-200 shadow-2xs">
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/20">
-                <Clock size={22} />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+                <Clock size={20} />
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-900">Commence daily work shift?</p>
+                <p className="text-sm font-semibold text-slate-900">Ready to start today&apos;s shift?</p>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Record your attendance timestamp in the official company shift ledger.
+                  Click below to record your workplace attendance for today.
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => handleCheckin("present")}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/25 hover:bg-emerald-500 transition active:scale-95 cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:opacity-60"
               >
-                <CheckCircle2 size={16} />
-                <span>{loading ? "Recording Timestamp…" : "Clock In (Present)"}</span>
+                <CheckCircle2 size={15} />
+                <span>{loading ? "Recording…" : "Check In (Present)"}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowOptions(!showOptions)}
-                className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
               >
                 More Options…
               </button>
@@ -183,9 +243,9 @@ export function StaffCheckinCard({
 
         {/* Extended options drawer */}
         {showOptions && (
-          <div className="mt-4 p-5 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-4">
+          <div className="mt-4 p-4 rounded-xl border border-slate-200 bg-slate-50/80 space-y-4">
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                 <MapPin size={13} className="text-blue-500" />
                 <span>Work Location / Check-In Note</span>
               </label>
@@ -193,18 +253,18 @@ export function StaffCheckinCard({
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="e.g. Head Office - Desk 4B, Client Site, Work From Home"
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs sm:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition"
+                placeholder="Office, client site, or remote notes"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition"
               />
             </div>
 
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-200">
-              <span className="text-xs font-bold text-slate-500 mr-2">Override Status:</span>
+              <span className="text-xs font-medium text-slate-500 mr-2">Override Status:</span>
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => handleCheckin("present")}
-                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 transition cursor-pointer disabled:opacity-60"
+                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition cursor-pointer disabled:opacity-60"
               >
                 Present Full Day
               </button>
@@ -212,7 +272,7 @@ export function StaffCheckinCard({
                 type="button"
                 disabled={loading}
                 onClick={() => handleCheckin("half_day")}
-                className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-orange-500 transition cursor-pointer disabled:opacity-60"
+                className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition cursor-pointer disabled:opacity-60"
               >
                 Half Day Shift
               </button>
@@ -220,7 +280,7 @@ export function StaffCheckinCard({
                 type="button"
                 disabled={loading}
                 onClick={() => handleCheckin("leave")}
-                className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-500 transition cursor-pointer disabled:opacity-60"
+                className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 transition cursor-pointer disabled:opacity-60"
               >
                 Mark Leave
               </button>
@@ -230,7 +290,7 @@ export function StaffCheckinCard({
 
         {message && (
           <p
-            className={`mt-3.5 rounded-xl border p-3.5 text-xs font-bold ${
+            className={`mt-3.5 rounded-lg border p-3 text-xs font-medium ${
               message.success
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                 : "border-rose-200 bg-rose-50 text-rose-700"

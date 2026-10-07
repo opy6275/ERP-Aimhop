@@ -24,7 +24,7 @@ type PaymentRecord = {
   id: string;
   paymentDate: Date;
   periodMonth: Date;
-  amount: any;
+  amount: string | number | { toString(): string };
   paymentMethod: string;
   paymentKind: string;
   emailSentAt?: Date | null;
@@ -83,7 +83,10 @@ export default async function PaymentsPage({
       },
     }),
     prisma.staff.findMany({ where: { status: "active" }, select: { id: true, salaryAmount: true } }),
-    prisma.payment.findMany({ where: { periodMonth } }),
+    prisma.payment.findMany({
+      where: { periodMonth },
+      select: { amount: true, paymentKind: true, staffId: true },
+    }),
   ]);
 
   const monthPaid = monthPayments
@@ -102,8 +105,8 @@ export default async function PaymentsPage({
   return (
     <AppShell title="Payment Management" email={session.email} roleLabel={roleLabel} variant="admin">
       <PageHeader
-        title="Payment & Disbursement History"
-        description="Comprehensive audit of all salary, advances, partial payments, and digital receipts."
+        title="Payroll & Disbursements"
+        description="Track salary disbursements, advance settlements, and official payment receipts."
         breadcrumbs={[
           { label: "Dashboard", href: "/admin/dashboard" },
           { label: "Operations", href: "/admin/payments" },
@@ -111,13 +114,13 @@ export default async function PaymentsPage({
         ]}
         actions={[
           {
-            label: "Record payment",
+            label: "Record Payment",
             href: "/admin/payments/new",
             icon: <Plus size={16} />,
             variant: "primary",
           },
           {
-            label: "View all receipts",
+            label: "Receipts Ledger",
             href: "/admin/receipts",
             icon: <ReceiptIcon size={16} />,
             variant: "secondary",
@@ -158,7 +161,7 @@ export default async function PaymentsPage({
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div className="mb-6 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
         <form className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -166,7 +169,7 @@ export default async function PaymentsPage({
               name="q"
               defaultValue={q}
               placeholder="Search by employee name or staff ID..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 pl-9.5 pr-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2 pl-9.5 pr-4 text-xs sm:text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
             />
           </div>
 
@@ -174,7 +177,7 @@ export default async function PaymentsPage({
             <select
               name="kind"
               defaultValue={kind ?? ""}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">All Payment Types</option>
               <option value="salary">Salary</option>
@@ -187,7 +190,7 @@ export default async function PaymentsPage({
             <select
               name="method"
               defaultValue={method ?? ""}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">All Payment Modes</option>
               <option value="bank_transfer">Bank Transfer</option>
@@ -198,16 +201,16 @@ export default async function PaymentsPage({
 
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-slate-800 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-blue-700 cursor-pointer"
             >
               <Filter size={14} />
-              <span>Apply Filters</span>
+              <span>Filter</span>
             </button>
 
             {(q || method || kind) && (
               <Link
                 href="/admin/payments"
-                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
               >
                 Reset
               </Link>
@@ -334,7 +337,7 @@ export default async function PaymentsPage({
                         ? {
                             id: p.receipt.id,
                             receiptNumber: p.receipt.receiptNumber,
-                            companyName: "AimHop CRM",
+                            companyName: "AimHop ERP",
                             employeeName: p.staff.fullName,
                             staffCode: p.staff.staffCode,
                             departmentName: p.staff.department.name,
