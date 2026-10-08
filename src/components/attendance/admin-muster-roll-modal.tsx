@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Printer, CalendarCheck, Clock, X } from "@/components/ui/icons";
+import { Printer, CalendarCheck, Clock, X, FileSpreadsheet } from "@/components/ui/icons";
 
 type StaffMusterRow = {
   id: string;
@@ -43,7 +43,41 @@ export function AdminMusterRollModal() {
   const currentMonthStr = new Date().toISOString().slice(0, 7); // YYYY-MM
   const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
   const [loading, setLoading] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [data, setData] = useState<MonthlyMusterData | null>(null);
+
+  async function handleExportExcel() {
+    if (!data || data.musterRoll.length === 0) return;
+    setExportingExcel(true);
+    try {
+      const XLSX = await import("xlsx");
+      const rows = data.musterRoll.map((r, idx) => ({
+        "S.No": idx + 1,
+        "Staff ID": r.staffCode,
+        "Employee Name": r.fullName,
+        "Department": r.department,
+        "Designation": r.designation || "-",
+        "Total Month Days": r.totalDays,
+        "Present (P)": r.present,
+        "Absent (A)": r.absent,
+        "Half Day (HD)": r.halfDay,
+        "Approved Leave (L)": r.leave,
+        "Holiday (H)": r.holiday,
+        "Payable Days": r.payableDays,
+        "Attendance %": `${r.presenceRate}%`,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Muster Roll");
+      XLSX.writeFile(wb, `AimHop_Attendance_Muster_${data.month}.xlsx`);
+    } catch (err) {
+      console.error("Excel export failed", err);
+      alert("Failed to export Excel file.");
+    } finally {
+      setExportingExcel(false);
+    }
+  }
 
   // Month options (last 12 months)
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
@@ -193,12 +227,22 @@ ${sheetEl.outerHTML}
 
                 <button
                   type="button"
+                  onClick={handleExportExcel}
+                  disabled={loading || !data || exportingExcel}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 shadow-2xs hover:bg-emerald-100 transition active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  <FileSpreadsheet size={14} className="text-emerald-700" />
+                  <span>{exportingExcel ? "Exporting..." : "Export Excel (.xlsx)"}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handlePrint}
                   disabled={loading || !data}
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-500 transition active:scale-95 cursor-pointer disabled:opacity-50"
                 >
                   <Printer size={14} />
-                  <span>Print Muster Roll (A4 Landscape / PDF)</span>
+                  <span>Print Muster Roll (A4 / PDF)</span>
                 </button>
 
                 <button

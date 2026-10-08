@@ -23,8 +23,8 @@ export async function GET(request: Request) {
   const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
   const totalDays = new Date(Date.UTC(year, month, 0)).getUTCDate();
 
-  // Fetch company info, staff, and records in parallel
-  const [company, staffList, records] = await Promise.all([
+  // Fetch company info, staff, records, and company holidays in parallel
+  const [company, staffList, records, holidays] = await Promise.all([
     prisma.company.findFirst(),
     prisma.staff.findMany({
       where: {
@@ -44,7 +44,18 @@ export async function GET(request: Request) {
       },
       orderBy: { date: "asc" },
     }),
+    prisma.companyHoliday.findMany({
+      where: {
+        date: { gte: startDate, lte: endDate },
+      },
+    }),
   ]);
+
+  const holidayByDay: Record<number, string> = {};
+  for (const h of holidays) {
+    const dayNum = new Date(h.date).getUTCDate();
+    holidayByDay[dayNum] = h.name;
+  }
 
   // Group records by staffId
   const recordsByStaff: Record<string, typeof records> = {};
@@ -87,8 +98,20 @@ export async function GET(request: Request) {
       }
     }
 
+    // Check official company holidays for this month
+    for (let dayNum = 1; dayNum <= totalDays; dayNum++) {
+      if (holidayByDay[dayNum] && !dayMap[dayNum]) {
+        dayMap[dayNum] = {
+          status: "holiday",
+          approvalStatus: "approved",
+          note: holidayByDay[dayNum],
+        };
+        holiday++;
+      }
+    }
+
     const attendedDays = present + halfDay * 0.5;
-    const payableDays = attendedDays + leave;
+    const payableDays = attendedDays + leave + holiday;
     const trackedDays = present + absent + halfDay + leave + holiday;
     // Monthly attendance percentage strictly based on total days of this month (e.g. 28/29 for Feb, 30 for April, 31 for Oct)
     const monthlyPercentage = totalDays > 0 ? Math.round((attendedDays / totalDays) * 1000) / 10 : 0;

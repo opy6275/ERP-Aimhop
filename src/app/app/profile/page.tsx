@@ -7,6 +7,7 @@ import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate, formatDateWithAge, formatInr } from "@/lib/format";
 import { maskAccountNumber } from "@/lib/security";
+import { StaffDocumentsSection } from "@/components/staff/staff-documents-section";
 
 export default async function StaffProfilePage() {
   const { session, user, roleLabel } = await requirePageSession({ staffOnly: true });
@@ -160,6 +161,9 @@ export default async function StaffProfilePage() {
                 </div>
               </div>
             </Panel>
+
+            {/* KYC & Verified Documents Vault */}
+            <StaffDocumentsSection staffId={staff.id} canUpload={true} canDelete={false} />
           </div>
         </div>
       )}

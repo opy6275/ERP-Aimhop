@@ -5,6 +5,61 @@ import { toDateOnlyUtc, decimalToNumber } from "@/lib/format";
 export type LeaveType = "casual" | "sick" | "paid" | "unpaid" | "other";
 export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
 
+export interface LeaveBalanceData {
+  year: number;
+  clTotal: number;
+  clUsed: number;
+  clRemaining: number;
+  slTotal: number;
+  slUsed: number;
+  slRemaining: number;
+  plTotal: number;
+  plUsed: number;
+  plRemaining: number;
+}
+
+export async function getOrCreateStaffLeaveBalance(staffId: string, year?: number): Promise<LeaveBalanceData> {
+  const currentYear = year || new Date().getFullYear();
+  let row = await prisma.leaveBalance.findUnique({
+    where: { staffId_year: { staffId, year: currentYear } },
+  });
+
+  if (!row) {
+    row = await prisma.leaveBalance.create({
+      data: {
+        staffId,
+        year: currentYear,
+        clTotal: 12,
+        clUsed: 0,
+        slTotal: 8,
+        slUsed: 0,
+        plTotal: 15,
+        plUsed: 0,
+      },
+    });
+  }
+
+  const clTotal = decimalToNumber(row.clTotal);
+  const clUsed = decimalToNumber(row.clUsed);
+  const slTotal = decimalToNumber(row.slTotal);
+  const slUsed = decimalToNumber(row.slUsed);
+  const plTotal = decimalToNumber(row.plTotal);
+  const plUsed = decimalToNumber(row.plUsed);
+
+  return {
+    year: currentYear,
+    clTotal,
+    clUsed,
+    clRemaining: Math.max(0, clTotal - clUsed),
+    slTotal,
+    slUsed,
+    slRemaining: Math.max(0, slTotal - slUsed),
+    plTotal,
+    plUsed,
+    plRemaining: Math.max(0, plTotal - plUsed),
+  };
+}
+
 export interface LeaveRecord {
   id: string;
   staffId: string;
@@ -145,6 +200,14 @@ export async function createLeaveRequest(params: {
       },
       reviewedBy: { select: { email: true } },
     },
+  });
+
+  const { createNotification } = await import("@/lib/notifications");
+  await createNotification({
+    title: "New Leave Application",
+    message: `${created.staff?.fullName || "Staff"} applied for ${params.daysCount} day(s) ${params.leaveType} leave.`,
+    type: "leave",
+    linkUrl: "/admin/leaves",
   });
 
   return formatLeaveRecord(created);
@@ -298,9 +361,52 @@ export async function reviewLeaveRequest(params: {
 
       cur.setUTCDate(cur.getUTCDate() + 1);
     }
+
+    // 2.1 Deduct leave quota from staff LeaveBalance
+    try {
+      const leaveYear = new Date(leave.startDate).getFullYear();
+      const currentBal = await getOrCreateStaffLeaveBalance(leave.staffId, leaveYear);
+      const days = Number(leave.daysCount);
+
+      if (leave.leaveType === "casual") {
+        await prisma.leaveBalance.update({
+          where: { staffId_year: { staffId: leave.staffId, year: leaveYear } },
+          data: { clUsed: currentBal.clUsed + days },
+        });
+      } else if (leave.leaveType === "sick") {
+        await prisma.leaveBalance.update({
+          where: { staffId_year: { staffId: leave.staffId, year: leaveYear } },
+          data: { slUsed: currentBal.slUsed + days },
+        });
+      } else if (leave.leaveType === "paid") {
+        await prisma.leaveBalance.update({
+          where: { staffId_year: { staffId: leave.staffId, year: leaveYear } },
+          data: { plUsed: currentBal.plUsed + days },
+        });
+      }
+    } catch (balErr) {
+      console.error("Failed to update leave balance quota:", balErr);
+    }
   }
 
-  // 3. Write append-only audit trail
+  // 3. Notify the employee user about decision
+  try {
+    const staffUser = await prisma.user.findFirst({ where: { staffId: leave.staffId } });
+    if (staffUser) {
+      const { createNotification } = await import("@/lib/notifications");
+      await createNotification({
+        userId: staffUser.id,
+        title: `Leave Application ${params.status.toUpperCase()}`,
+        message: `Your ${leave.leaveType} leave application (${leave.daysCount} days) has been ${params.status}.`,
+        type: "leave",
+        linkUrl: "/app/leaves",
+      });
+    }
+  } catch (notifErr) {
+    console.error("Failed to notify employee:", notifErr);
+  }
+
+  // 4. Write append-only audit trail
   await writeAudit({
     actorUserId: params.reviewerUserId,
     action: `leave.${params.status}`,

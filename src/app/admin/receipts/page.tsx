@@ -8,12 +8,27 @@ import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate, formatInr } from "@/lib/format";
 import { Plus, Receipt } from "@/components/ui/icons";
 
+import { ExportPaymentsExcelButton } from "@/components/admin/export-payments-excel-button";
+
 export default async function ReceiptsPage() {
   const { session, roleLabel } = await requirePageSession({ adminOnly: true });
   const receipts = await prisma.paymentReceipt.findMany({
     orderBy: { issuedAt: "desc" },
     take: 100,
   });
+
+  const exportItems = receipts.map((r) => ({
+    receiptNumber: r.receiptNumber,
+    staffCode: r.staffCode,
+    employeeName: r.employeeName,
+    departmentName: r.departmentName,
+    periodLabel: r.periodLabel,
+    amount: decimalToNumber(r.amountPaid),
+    paymentMethod: r.paymentMethod,
+    paymentKind: "salary",
+    dateStr: formatDate(r.issuedAt),
+    authorizedBy: r.authorizedBy,
+  }));
 
   return (
     <AppShell title="Payment Receipts" email={session.email} roleLabel={roleLabel} variant="admin">
@@ -25,6 +40,7 @@ export default async function ReceiptsPage() {
           { label: "Operations", href: "/admin/payments" },
           { label: "Receipts" },
         ]}
+        actionNode={<ExportPaymentsExcelButton items={exportItems} filename="AimHop_Salary_Receipts.xlsx" />}
         actions={[
           {
             label: "Record payment",

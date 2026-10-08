@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Receipt, Printer, X, Mail } from "@/components/ui/icons";
+import { Receipt, Printer, X, Mail, Download } from "@/components/ui/icons";
 import { formatInr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 
@@ -23,9 +23,47 @@ export type ReceiptData = {
 export function ReceiptModal({ receipt }: { receipt: ReceiptData }) {
   const [open, setOpen] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [emailFeedback, setEmailFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  async function handleDownloadPdf() {
+    const receiptEl = document.querySelector(".printable-receipt") as HTMLElement;
+    if (!receiptEl) return;
+    setDownloadingPdf(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const canvas = await html2canvas(receiptEl, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pageWidth = 210;
+      const margin = 12;
+      const printWidth = pageWidth - margin * 2;
+      const printHeight = (canvas.height * printWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", margin, margin, printWidth, printHeight);
+      pdf.save(`AimHop_SalarySlip_${receipt.staffCode}_${receipt.receiptNumber}.pdf`);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      alert("Failed to generate PDF. You can use Print -> Save as PDF as fallback.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }
 
   async function handleSendEmail(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -339,17 +377,29 @@ ${receiptEl.outerHTML}
             )}
 
             {/* Modal Screen Footer Actions - hidden on print */}
-            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2.5 sm:px-6 sm:py-3 no-print print:hidden">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEmailInput(!showEmailInput)}
-                className="gap-1.5 text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100"
-              >
-                <Mail size={13} />
-                <span>Email Salary Slip</span>
-              </Button>
+            <div className="flex flex-wrap shrink-0 items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2.5 sm:px-6 sm:py-3 no-print print:hidden">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEmailInput(!showEmailInput)}
+                  className="gap-1.5 text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100 text-xs"
+                >
+                  <Mail size={13} />
+                  <span>Email</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrint}
+                  className="gap-1.5 text-xs text-slate-700"
+                >
+                  <Printer size={13} />
+                  <span>Print</span>
+                </Button>
+              </div>
 
               <div className="flex items-center gap-2">
                 <Button
@@ -363,11 +413,13 @@ ${receiptEl.outerHTML}
                 <Button
                   type="button"
                   size="sm"
-                  onClick={handlePrint}
-                  className="gap-1.5"
+                  onClick={handleDownloadPdf}
+                  disabled={downloadingPdf}
+                  loading={downloadingPdf}
+                  className="gap-1.5 bg-blue-600 hover:bg-blue-500 text-white shadow-xs font-semibold"
                 >
-                  <Printer size={13} />
-                  <span>Print Receipt</span>
+                  <Download size={13} />
+                  <span>{downloadingPdf ? "Generating PDF..." : "Download PDF Pay Slip"}</span>
                 </Button>
               </div>
             </div>

@@ -19,6 +19,7 @@ import {
   Filter,
 } from "@/components/ui/icons";
 import { PaymentRowActions } from "@/components/admin/payment-row-actions";
+import { ExportPaymentsExcelButton } from "@/components/admin/export-payments-excel-button";
 
 type PaymentRecord = {
   id: string;
@@ -102,6 +103,19 @@ export default async function PaymentsPage({
     pending += bal.pending;
   }
 
+  const exportItems = payments.map((p) => ({
+    receiptNumber: p.receipt?.receiptNumber,
+    staffCode: p.staff.staffCode,
+    employeeName: p.staff.fullName,
+    departmentName: p.staff.department.name,
+    periodLabel: formatMonthLabel(p.periodMonth),
+    amount: decimalToNumber(p.amount),
+    paymentMethod: p.paymentMethod,
+    paymentKind: p.paymentKind,
+    dateStr: formatDate(p.paymentDate),
+    authorizedBy: "Accounts Officer",
+  }));
+
   return (
     <AppShell title="Payment Management" email={session.email} roleLabel={roleLabel} variant="admin">
       <PageHeader
@@ -112,6 +126,7 @@ export default async function PaymentsPage({
           { label: "Operations", href: "/admin/payments" },
           { label: "Payments" },
         ]}
+        actionNode={<ExportPaymentsExcelButton items={exportItems} filename="AimHop_Disbursements.xlsx" />}
         actions={[
           {
             label: "Record Payment",

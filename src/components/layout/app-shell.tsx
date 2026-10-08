@@ -20,6 +20,7 @@ function resolveTitle(pathname: string, variant: "admin" | "staff", customTitle?
     if (pathname === "/admin/categories") return "Categories";
     if (pathname === "/admin/attendance") return "Attendance Roster";
     if (pathname === "/admin/leaves") return "Leave Management";
+    if (pathname === "/admin/holidays") return "Company Holidays";
     if (pathname === "/admin/payments") return "Disbursement Ledger";
     if (pathname === "/admin/payments/new") return "Record Payment";
     if (pathname === "/admin/receipts") return "Payment Receipts";
@@ -57,6 +58,7 @@ import {
   ChevronRight,
 } from "@/components/ui/icons";
 import { SearchCommand } from "@/components/ui/search-command";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { Button } from "@/components/ui/button";
 
 type NavItem = {
@@ -88,6 +90,7 @@ const ADMIN_NAV: NavGroup[] = [
     items: [
       { href: "/admin/attendance", label: "Attendance", icon: CalendarCheck },
       { href: "/admin/leaves", label: "Leaves", icon: CalendarDays },
+      { href: "/admin/holidays", label: "Holidays", icon: CalendarDays },
       { href: "/admin/payments", label: "Payments", icon: CreditCard },
       { href: "/admin/receipts", label: "Receipts", icon: Receipt },
     ],
@@ -363,6 +366,9 @@ export function AppShell({ title, email, roleLabel, variant, children }: AppShel
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Quick search command button */}
             <SearchCommand variant={variant} />
+
+            {/* In-app Notification Bell */}
+            <NotificationBell variant={variant} />
 
             <Button
               type="button"

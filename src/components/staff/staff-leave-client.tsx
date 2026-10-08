@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X, CalendarDays, AlertCircle, CheckCircle2 } from "@/components/ui/icons";
+import type { LeaveBalanceData } from "@/lib/leaves";
 
-export function StaffLeaveClient() {
+export function StaffLeaveClient({ leaveBalance }: { leaveBalance?: LeaveBalanceData | null }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -146,6 +147,21 @@ export function StaffLeaveClient() {
                   <option value="unpaid">Leave Without Pay (LWP)</option>
                   <option value="other">Other / Special Leave</option>
                 </select>
+
+                {leaveBalance && (
+                  <div className="mt-1.5 flex items-center justify-between text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span>Quota Balance:</span>
+                    <span className="font-bold text-slate-800">
+                      {form.leaveType === "casual"
+                        ? `${leaveBalance.clRemaining} days left (${leaveBalance.clUsed} used of ${leaveBalance.clTotal})`
+                        : form.leaveType === "sick"
+                        ? `${leaveBalance.slRemaining} days left (${leaveBalance.slUsed} used of ${leaveBalance.slTotal})`
+                        : form.leaveType === "paid"
+                        ? `${leaveBalance.plRemaining} days left (${leaveBalance.plUsed} used of ${leaveBalance.plTotal})`
+                        : "Unlimited / Unpaid"}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

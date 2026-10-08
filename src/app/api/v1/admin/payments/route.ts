@@ -130,6 +130,22 @@ export async function POST(request: Request) {
     targetLabel: `${staff.staffCode} ${d.amount}`,
   });
 
+  try {
+    const staffUser = await prisma.user.findFirst({ where: { staffId: staff.id } });
+    if (staffUser) {
+      const { createNotification } = await import("@/lib/notifications");
+      await createNotification({
+        userId: staffUser.id,
+        title: "Salary Payment Disbursed",
+        message: `Salary disbursement for period ${d.periodMonth} processed (${d.paymentMethod.replace("_", " ")}).`,
+        type: "payment",
+        linkUrl: "/app/receipts",
+      });
+    }
+  } catch (notifErr) {
+    console.error("Failed to notify staff about payment:", notifErr);
+  }
+
   return apiOk(
     {
       payment: { ...payment, amount: decimalToNumber(payment.amount) },

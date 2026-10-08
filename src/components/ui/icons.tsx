@@ -65,6 +65,10 @@ import {
   RefreshCw,
   FileCheck,
   Send,
+  Bell,
+  FileSpreadsheet,
+  UploadCloud,
+  File,
 } from "lucide-react";
 
 export type IconProps = LucideProps;
@@ -135,4 +139,8 @@ export {
   RefreshCw,
   FileCheck,
   Send,
+  Bell,
+  FileSpreadsheet,
+  UploadCloud,
+  File,
 };

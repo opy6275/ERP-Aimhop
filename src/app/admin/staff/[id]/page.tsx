@@ -10,6 +10,7 @@ import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate, formatDateWithAge, formatInr, formatMonthLabel } from "@/lib/format";
 import { StaffCredentialsModal } from "@/components/admin/staff-credentials-modal";
+import { StaffDocumentsSection } from "@/components/staff/staff-documents-section";
 import {
   Pencil,
   CalendarCheck,
@@ -397,6 +398,9 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
             </DataTable>
           )}
         </Panel>
+
+        {/* KYC & Verified Documents Vault */}
+        <StaffDocumentsSection staffId={staff.id} canUpload={true} canDelete={true} />
       </div>
     </AppShell>
   );

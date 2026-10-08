@@ -157,6 +157,14 @@ export async function POST(request: Request) {
     targetLabel: `Self check-in request (${status.toUpperCase()}) submitted for admin approval on ${today.toISOString().slice(0, 10)}`,
   });
 
+  const { createNotification } = await import("@/lib/notifications");
+  await createNotification({
+    title: "New Check-In Request",
+    message: `Attendance check-in (${status.toUpperCase().replace("_", " ")}) awaiting your approval.`,
+    type: "attendance",
+    linkUrl: "/admin/attendance?tab=requests",
+  });
+
   return apiOk({
     record,
     message: `Attendance request submitted (${status.toUpperCase().replace("_", " ")}). Awaiting Admin Approval.`,

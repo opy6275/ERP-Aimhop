@@ -146,6 +146,7 @@ model Staff {
   payments   Payment[]
   documents  StaffDocument[]
   leaves     LeaveRequest[]
+  leaveBalances LeaveBalance[]
 
   @@index([departmentId, status])
   @@map("staff")
@@ -172,6 +173,7 @@ model User {
   attendanceMarked   AttendanceRecord[] @relation("AttendanceMarkedBy")
   documentsUploaded  StaffDocument[]
   leavesReviewed     LeaveRequest[]     @relation("LeaveReviewedBy")
+  notifications      AppNotification[]
 
   @@map("users")
 }
@@ -317,3 +319,51 @@ model LeaveRequest {
   @@index([startDate, endDate])
   @@map("leave_requests")
 }
+
+model LeaveBalance {
+  id        String   @id @default(cuid())
+  staffId   String   @map("staff_id")
+  year      Int
+  clTotal   Decimal  @default(12) @map("cl_total") // Casual Leave
+  clUsed    Decimal  @default(0)  @map("cl_used")
+  slTotal   Decimal  @default(8)  @map("sl_total") // Sick Leave
+  slUsed    Decimal  @default(0)  @map("sl_used")
+  plTotal   Decimal  @default(15) @map("pl_total") // Paid / Privilege Leave
+  plUsed    Decimal  @default(0)  @map("pl_used")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, year])
+  @@map("leave_balances")
+}
+
+model CompanyHoliday {
+  id          String   @id @default(cuid())
+  name        String
+  date        DateTime @unique
+  type        String   @default("gazetted") // gazetted, optional, company
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("company_holidays")
+}
+
+model AppNotification {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id") // null = broadcast to admin team
+  title     String
+  message   String
+  type      String   @default("info") // leave, attendance, payment, holiday, info
+  linkUrl   String?  @map("link_url")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("app_notifications")
+}
+
