@@ -201,17 +201,8 @@ export default async function StaffListPage({
             <span>Sorted alphabetically by name</span>
           </div>
 
-          <DataTable
-            headers={[
-              "Employee Identity",
-              "Department",
-              "Job Category",
-              "Compensation",
-              "Contact Information",
-              "Employment Status",
-              "Action",
-            ]}
-          >
+          {/* Mobile Card List (< md) */}
+          <div className="space-y-3 md:hidden">
             {staff.map((s) => {
               const initials = s.fullName
                 .split(" ")
@@ -221,71 +212,159 @@ export default async function StaffListPage({
                 .toUpperCase();
 
               return (
-                <tr key={s.id} className="transition-colors hover:bg-blue-50/40 group">
-                  <Td>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 font-mono text-xs font-bold text-slate-700 border border-slate-200">
+                <div
+                  key={s.id}
+                  className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-2xs"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 font-mono text-xs font-bold text-slate-700 border border-slate-200">
                         {initials}
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <Link
                           href={`/admin/staff/${s.id}`}
-                          className="font-bold text-sm text-slate-900 hover:text-blue-600 transition"
+                          className="font-bold text-sm text-slate-900 hover:text-blue-600 transition block truncate"
                         >
                           {s.fullName}
                         </Link>
-                        <p className="text-xs text-slate-400 font-mono font-medium">
+                        <p className="text-xs text-slate-400 font-mono font-medium truncate">
                           {s.staffCode} {s.designation ? `· ${s.designation}` : ""}
                         </p>
                       </div>
                     </div>
-                  </Td>
-                  <Td>
-                    <span className="inline-flex items-center rounded-lg border border-slate-200/90 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-700">
-                      {s.department.name}
-                    </span>
-                  </Td>
-                  <Td className="text-xs font-medium text-slate-600">{s.category.name}</Td>
-                  <Td mono className="font-bold text-sm text-slate-900">
-                    {formatInr(Number(s.salaryAmount))}
-                    <span className="ml-1 text-[11px] font-normal text-slate-400 capitalize">
-                      /{s.paymentType === "daily" ? "day" : "mo"}
-                    </span>
-                  </Td>
-                  <Td className="text-xs text-slate-600">
-                    <p className="font-medium">{s.mobile || "—"}</p>
-                    <p className="text-slate-400 text-[11px]">{s.email || "—"}</p>
-                    {s.dateOfBirth && (
-                      <p className="text-[11px] text-blue-600 font-medium mt-0.5">
-                        DOB: {formatDate(s.dateOfBirth)}
-                      </p>
-                    )}
-                  </Td>
-                  <Td>
                     <StatusBadge value={s.status} />
-                  </Td>
-                  <Td>
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <Link
-                        href={`/admin/staff/${s.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-blue-400 hover:bg-slate-50"
-                      >
-                        <Eye size={13} className="text-slate-400" />
-                        <span>View</span>
-                      </Link>
-                      <Link
-                        href={`/admin/staff/${s.id}/edit`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 shadow-2xs transition hover:bg-blue-100"
-                      >
-                        <Pencil size={13} className="text-blue-500" />
-                        <span>Edit</span>
-                      </Link>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50/70 p-2.5 rounded-lg border border-slate-100">
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-slate-400 block">Department</span>
+                      <span className="font-semibold text-slate-800 truncate block">{s.department.name}</span>
                     </div>
-                  </Td>
-                </tr>
+                    <div>
+                      <span className="text-[10px] uppercase font-semibold text-slate-400 block">Compensation</span>
+                      <span className="font-mono font-bold text-slate-900">
+                        {formatInr(Number(s.salaryAmount))}
+                        <span className="text-[10px] font-normal text-slate-500 lowercase">/{s.paymentType === "daily" ? "day" : "mo"}</span>
+                      </span>
+                    </div>
+                    {s.mobile && (
+                      <div className="col-span-2 pt-1 border-t border-slate-200/50 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500">{s.mobile}</span>
+                        <span className="text-[11px] font-medium text-slate-600">{s.category.name}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <Link
+                      href={`/admin/staff/${s.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-blue-400"
+                    >
+                      <Eye size={13} className="text-slate-400" />
+                      <span>Profile</span>
+                    </Link>
+                    <Link
+                      href={`/admin/staff/${s.id}/edit`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 shadow-2xs transition hover:bg-blue-100"
+                    >
+                      <Pencil size={13} className="text-blue-500" />
+                      <span>Edit</span>
+                    </Link>
+                  </div>
+                </div>
               );
             })}
-          </DataTable>
+          </div>
+
+          {/* Desktop Data Table (>= md) */}
+          <div className="hidden md:block">
+            <DataTable
+              headers={[
+                "Employee Identity",
+                "Department",
+                "Job Category",
+                "Compensation",
+                "Contact Information",
+                "Employment Status",
+                "Action",
+              ]}
+            >
+              {staff.map((s) => {
+                const initials = s.fullName
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase();
+
+                return (
+                  <tr key={s.id} className="transition-colors hover:bg-blue-50/40 group">
+                    <Td>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 font-mono text-xs font-bold text-slate-700 border border-slate-200">
+                          {initials}
+                        </div>
+                        <div>
+                          <Link
+                            href={`/admin/staff/${s.id}`}
+                            className="font-bold text-sm text-slate-900 hover:text-blue-600 transition"
+                          >
+                            {s.fullName}
+                          </Link>
+                          <p className="text-xs text-slate-400 font-mono font-medium">
+                            {s.staffCode} {s.designation ? `· ${s.designation}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </Td>
+                    <Td>
+                      <span className="inline-flex items-center rounded-lg border border-slate-200/90 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-700">
+                        {s.department.name}
+                      </span>
+                    </Td>
+                    <Td className="text-xs font-medium text-slate-600">{s.category.name}</Td>
+                    <Td mono className="font-bold text-sm text-slate-900">
+                      {formatInr(Number(s.salaryAmount))}
+                      <span className="ml-1 text-[11px] font-normal text-slate-400 capitalize">
+                        /{s.paymentType === "daily" ? "day" : "mo"}
+                      </span>
+                    </Td>
+                    <Td className="text-xs text-slate-600">
+                      <p className="font-medium">{s.mobile || "—"}</p>
+                      <p className="text-slate-400 text-[11px]">{s.email || "—"}</p>
+                      {s.dateOfBirth && (
+                        <p className="text-[11px] text-blue-600 font-medium mt-0.5">
+                          DOB: {formatDate(s.dateOfBirth)}
+                        </p>
+                      )}
+                    </Td>
+                    <Td>
+                      <StatusBadge value={s.status} />
+                    </Td>
+                    <Td>
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <Link
+                          href={`/admin/staff/${s.id}`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-2xs transition hover:border-blue-400 hover:bg-slate-50"
+                        >
+                          <Eye size={13} className="text-slate-400" />
+                          <span>View</span>
+                        </Link>
+                        <Link
+                          href={`/admin/staff/${s.id}/edit`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 shadow-2xs transition hover:bg-blue-100"
+                        >
+                          <Pencil size={13} className="text-blue-500" />
+                          <span>Edit</span>
+                        </Link>
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })}
+            </DataTable>
+          </div>
         </div>
       )}
     </AppShell>
