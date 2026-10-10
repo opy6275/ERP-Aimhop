@@ -25,8 +25,27 @@ export async function GET(_req: Request, ctx: Ctx) {
   });
   if (!dept) return notFound();
 
+  const headStaff = dept.headStaffId
+    ? await prisma.staff.findUnique({
+        where: { id: dept.headStaffId },
+        select: {
+          id: true,
+          fullName: true,
+          staffCode: true,
+          designation: true,
+          photoUrl: true,
+          email: true,
+        },
+      })
+    : null;
+
   return apiOk({
-    department: { ...dept, activeStaffCount: dept._count.staff, _count: undefined },
+    department: {
+      ...dept,
+      activeStaffCount: dept._count.staff,
+      headStaff,
+      _count: undefined,
+    },
   });
 }
 

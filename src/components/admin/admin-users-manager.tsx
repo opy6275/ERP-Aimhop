@@ -153,7 +153,7 @@ export function AdminUsersManager({
     setError(null);
     setSuccess(null);
     setSelectedItem(item);
-    setFormEmail(item.contactEmail || (item.staffCode ? `${item.staffCode.toLowerCase()}@aimhop.com` : ""));
+    setFormEmail(item.contactEmail || "");
     setFormPassword("");
     setFormConfirmPassword("");
     setFormIsActive(true);

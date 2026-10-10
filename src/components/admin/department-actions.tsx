@@ -7,6 +7,13 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 
+type StaffOption = {
+  id: string;
+  fullName: string;
+  staffCode: string;
+  designation?: string | null;
+};
+
 type DeptData = {
   id: string;
   name: string;
@@ -14,9 +21,22 @@ type DeptData = {
   description: string | null;
   status: string;
   staffCount: number;
+  headStaffId?: string | null;
+  headStaff?: {
+    id: string;
+    fullName: string;
+    staffCode: string;
+    designation?: string | null;
+  } | null;
 };
 
-export function DepartmentActions({ department }: { department: DeptData }) {
+export function DepartmentActions({
+  department,
+  staff = [],
+}: {
+  department: DeptData;
+  staff?: StaffOption[];
+}) {
   const router = useRouter();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -34,6 +54,7 @@ export function DepartmentActions({ department }: { department: DeptData }) {
       name: String(fd.get("name") || ""),
       code: String(fd.get("code") || "") || null,
       description: String(fd.get("description") || "") || null,
+      headStaffId: String(fd.get("headStaffId") || "") || null,
       status: String(fd.get("status") || "active"),
     };
 
@@ -158,6 +179,22 @@ export function DepartmentActions({ department }: { department: DeptData }) {
               defaultValue={department.description || ""}
               className={inputClass}
             />
+          </div>
+
+          <div>
+            <label className={labelClass}>Head of Department (HOD)</label>
+            <select
+              name="headStaffId"
+              defaultValue={department.headStaffId || ""}
+              className={inputClass}
+            >
+              <option value="">No Department Head (Unassigned)</option>
+              {staff.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.fullName} ({s.staffCode}){s.designation ? ` — ${s.designation}` : ""}
+                </option>
+              ))}
+            </select>
           </div>
 
           {error && (

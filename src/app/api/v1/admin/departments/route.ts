@@ -23,10 +23,31 @@ export async function GET() {
     },
   });
 
+  const headIds = departments
+    .map((d) => d.headStaffId)
+    .filter((id): id is string => Boolean(id));
+
+  const heads = headIds.length > 0
+    ? await prisma.staff.findMany({
+        where: { id: { in: headIds } },
+        select: {
+          id: true,
+          fullName: true,
+          staffCode: true,
+          designation: true,
+          photoUrl: true,
+          email: true,
+        },
+      })
+    : [];
+
+  const headMap = new Map(heads.map((h) => [h.id, h]));
+
   return apiOk({
     departments: departments.map((d) => ({
       ...d,
       activeStaffCount: d._count.staff,
+      headStaff: d.headStaffId ? headMap.get(d.headStaffId) || null : null,
       _count: undefined,
     })),
   });

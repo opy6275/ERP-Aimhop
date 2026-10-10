@@ -37,6 +37,9 @@ export function StaffForm({
     setLoading(true);
     setError(null);
     const fd = new FormData(e.currentTarget);
+    const salaryRaw = fd.get("salaryAmount");
+    const salaryAmount = salaryRaw && String(salaryRaw).trim() !== "" ? Number(salaryRaw) : 0;
+
     const payload = {
       fullName: String(fd.get("fullName") || ""),
       mobile: String(fd.get("mobile") || "") || null,
@@ -46,7 +49,7 @@ export function StaffForm({
       categoryId: String(fd.get("categoryId") || ""),
       joiningDate: String(fd.get("joiningDate") || "") || null,
       employmentType: String(fd.get("employmentType") || "") || null,
-      salaryAmount: Number(fd.get("salaryAmount") || 0),
+      salaryAmount,
       paymentType: String(fd.get("paymentType") || "monthly"),
       bankName: String(fd.get("bankName") || "") || null,
       accountNumber: String(fd.get("accountNumber") || "") || null,
@@ -266,7 +269,9 @@ export function StaffForm({
           </div>
 
           <div>
-            <label className={labelClass}>Base Salary Amount (₹) *</label>
+            <label className={labelClass}>
+              Base Salary Amount (₹) <span className="text-xs font-normal text-slate-400">(Optional)</span>
+            </label>
             <div className="relative">
               <span className="absolute left-3.5 top-2.5 text-sm font-semibold text-slate-400">₹</span>
               <input
@@ -274,10 +279,8 @@ export function StaffForm({
                 type="number"
                 min={0}
                 step="1"
-                required
-                defaultValue={25000}
                 className={`${inputClass} pl-8 font-mono font-semibold`}
-                placeholder="25000"
+                placeholder="0 (Optional)"
               />
             </div>
           </div>

@@ -28,7 +28,7 @@ export async function getSmtpSettings(): Promise<SmtpConfig> {
       user: dbSetting.user || process.env.SMTP_USER || "",
       pass: dbSetting.pass || process.env.SMTP_PASS || "",
       fromEmail: dbSetting.fromEmail || dbSetting.user || process.env.SMTP_FROM || "",
-      fromName: dbSetting.fromName || "AimHop ERP Payroll",
+      fromName: dbSetting.fromName || "AIMhOP Erp",
       replyTo: dbSetting.replyTo || "",
       isEnabled: dbSetting.isEnabled ?? true,
     };
@@ -42,7 +42,7 @@ export async function getSmtpSettings(): Promise<SmtpConfig> {
     user: process.env.SMTP_USER || "",
     pass: process.env.SMTP_PASS || "",
     fromEmail: process.env.SMTP_FROM || process.env.SMTP_USER || "",
-    fromName: "AimHop ERP Payroll",
+    fromName: "AIMhOP Erp",
     replyTo: "",
     isEnabled: true,
   };
@@ -76,7 +76,7 @@ export async function saveSmtpSettings(data: {
       user: data.user.trim(),
       pass: passwordToSave,
       fromEmail: data.fromEmail.trim() || data.user.trim(),
-      fromName: data.fromName.trim() || "AimHop ERP Payroll",
+      fromName: data.fromName.trim() || "AIMhOP Erp",
       replyTo: data.replyTo?.trim() || null,
       isEnabled: data.isEnabled ?? true,
     },
@@ -88,7 +88,7 @@ export async function saveSmtpSettings(data: {
       user: data.user.trim(),
       pass: passwordToSave,
       fromEmail: data.fromEmail.trim() || data.user.trim(),
-      fromName: data.fromName.trim() || "AimHop ERP Payroll",
+      fromName: data.fromName.trim() || "AIMhOP Erp",
       replyTo: data.replyTo?.trim() || null,
       isEnabled: data.isEnabled ?? true,
     },
@@ -128,39 +128,58 @@ export async function testSmtpConnection(testRecipientEmail: string) {
     const info = await transporter.sendMail({
       from: fromAddress,
       to: testRecipientEmail,
-      subject: "✅ AimHop ERP — Free Email Setup Verification",
+      subject: "AIMhOP Erp — System Email Gateway Verified",
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-          <div style="background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 24px; text-align: center; color: #ffffff;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">AimHop ERP</h1>
-            <p style="margin: 6px 0 0; font-size: 13px; opacity: 0.9;">Email Gateway Connection Verified</p>
+          <!-- Top Header Banner -->
+          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 26px 24px; text-align: center; color: #ffffff;">
+            <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">AIMhOP Erp</h1>
+            <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.92; font-weight: 500;">Automated System Dispatch Gateway</p>
           </div>
+
           <div style="padding: 28px 24px; color: #334155; line-height: 1.6;">
-            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: center;">
-              <span style="display: inline-block; font-size: 24px; margin-bottom: 6px;">🎉</span>
-              <h2 style="margin: 0; font-size: 16px; color: #166534; font-weight: 700;">100% Free SMTP Configuration is Live!</h2>
-              <p style="margin: 4px 0 0; font-size: 12px; color: #15803d;">Your salary slip and employee payment emails will now be automatically delivered through this address.</p>
+            <!-- Status Card -->
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 18px 20px; margin-bottom: 24px; text-align: center;">
+              <span style="display: inline-block; font-size: 11px; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 0.8px; background: #dcfce7; padding: 4px 12px; border-radius: 20px; margin-bottom: 8px;">
+                ✓ Gateway Operational
+              </span>
+              <h2 style="margin: 0; font-size: 16px; color: #0f172a; font-weight: 800;">SMTP Email Service Connected Successfully</h2>
+              <p style="margin: 6px 0 0; font-size: 13px; color: #334155; line-height: 1.5;">
+                Outgoing mail transport has been verified. Automated salary payment vouchers, employee credentials, and security notifications will be dispatched through this account.
+              </p>
             </div>
+
+            <!-- Configuration Diagnostics -->
             <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
               <tr>
-                <td style="padding: 8px 0; color: #64748b; font-weight: 600; width: 140px;">SMTP Host:</td>
-                <td style="padding: 8px 0; color: #0f172a; font-family: monospace;">${config.host}:${config.port}</td>
+                <td style="padding: 8px 0; color: #64748b; font-weight: 600; width: 140px; border-bottom: 1px solid #f1f5f9;">SMTP Host:</td>
+                <td style="padding: 8px 0; color: #0f172a; font-family: monospace; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${config.host}:${config.port}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Sender Account:</td>
-                <td style="padding: 8px 0; color: #0f172a; font-family: monospace;">${config.user}</td>
+                <td style="padding: 8px 0; color: #64748b; font-weight: 600; border-bottom: 1px solid #f1f5f9;">Encryption:</td>
+                <td style="padding: 8px 0; color: #0f172a; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${config.secure ? "SSL / TLS (Port " + config.port + ")" : "STARTTLS"}</td>
               </tr>
               <tr>
-                <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Verified Recipient:</td>
-                <td style="padding: 8px 0; color: #0f172a; font-family: monospace;">${testRecipientEmail}</td>
+                <td style="padding: 8px 0; color: #64748b; font-weight: 600; border-bottom: 1px solid #f1f5f9;">Sender Account:</td>
+                <td style="padding: 8px 0; color: #0f172a; font-family: monospace; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${config.user}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #64748b; font-weight: 600; border-bottom: 1px solid #f1f5f9;">Sender Display:</td>
+                <td style="padding: 8px 0; color: #0f172a; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${config.fromName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #64748b; font-weight: 600; border-bottom: 1px solid #f1f5f9;">Verified Recipient:</td>
+                <td style="padding: 8px 0; color: #0f172a; font-family: monospace; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${testRecipientEmail}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Timestamp:</td>
                 <td style="padding: 8px 0; color: #0f172a;">${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</td>
               </tr>
             </table>
-            <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 24px 0 0; padding-top: 16px; border-top: 1px dashed #e2e8f0;">
-              This test was triggered from the AimHop ERP Administration Panel.
+
+            <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 24px 0 0; padding-top: 16px; border-top: 1px dashed #e2e8f0; line-height: 1.5;">
+              AIMhOP Erp • Automated System Dispatch<br>
+              This is an automated system verification email generated from the AIMhOP Erp Administration Portal.
             </p>
           </div>
         </div>
@@ -416,7 +435,7 @@ export async function sendSalarySlipEmail({
     });
 
     const fromAddress = `"${config.fromName}" <${config.fromEmail || config.user}>`;
-    const subject = `📄 Salary Slip for ${periodLabel} - ${payment.staff.fullName} [${payment.receipt?.receiptNumber || payment.staff.staffCode}]`;
+    const subject = `Salary Disbursement Slip: ${periodLabel} - ${payment.staff.fullName} [${payment.receipt?.receiptNumber || payment.staff.staffCode}]`;
 
     const info = await transporter.sendMail({
       from: fromAddress,
@@ -490,17 +509,17 @@ export async function sendPasswordResetOtpEmail(toEmail: string, otp: string, re
   const html = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
       <div style="text-align: center; margin-bottom: 24px;">
-        <h2 style="color: #1e293b; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">AimHop ERP</h2>
+        <h2 style="color: #1e293b; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">AIMhOP Erp</h2>
         <p style="color: #64748b; font-size: 13px; margin: 4px 0 0;">Password Reset Verification Code</p>
       </div>
       <p style="color: #334155; font-size: 14px; line-height: 1.6;">Hello ${recipientName || "there"},</p>
-      <p style="color: #334155; font-size: 14px; line-height: 1.6;">We received a request to reset the password for your AimHop ERP account (<strong>${toEmail}</strong>). Please enter the following 6-digit verification code to proceed:</p>
+      <p style="color: #334155; font-size: 14px; line-height: 1.6;">We received a request to reset the password for your AIMhOP Erp account (<strong>${toEmail}</strong>). Please enter the following 6-digit verification code to proceed:</p>
       <div style="background: linear-gradient(135deg, #eff6ff 0%, #f1f5f9 100%); border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
         <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #1d4ed8; font-family: monospace;">${otp}</span>
       </div>
       <p style="color: #64748b; font-size: 12px; line-height: 1.5;">This code will expire in <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email. Your current password remains unchanged.</p>
       <div style="border-top: 1px solid #f1f5f9; margin-top: 24px; padding-top: 16px; text-align: center;">
-        <p style="color: #94a3b8; font-size: 11px; margin: 0;">AimHop ERP Enterprise System • Automated Notification</p>
+        <p style="color: #94a3b8; font-size: 11px; margin: 0;">AIMhOP Erp Enterprise System • Automated Notification</p>
       </div>
     </div>
   `;

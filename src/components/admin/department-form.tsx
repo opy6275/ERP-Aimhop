@@ -6,7 +6,14 @@ import { Plus } from "@/components/ui/icons";
 
 import { Button } from "@/components/ui/button";
 
-export function DepartmentForm() {
+type StaffOption = {
+  id: string;
+  fullName: string;
+  staffCode: string;
+  designation?: string | null;
+};
+
+export function DepartmentForm({ staff = [] }: { staff?: StaffOption[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +32,7 @@ export function DepartmentForm() {
           code: String(fd.get("code") || "") || null,
           name: String(fd.get("name") || ""),
           description: String(fd.get("description") || "") || null,
+          headStaffId: String(fd.get("headStaffId") || "") || null,
           status: "active",
         }),
       });
@@ -81,6 +89,18 @@ export function DepartmentForm() {
       <div>
         <label className="text-xs font-semibold text-slate-700">Description</label>
         <input name="description" className={field} placeholder="Description (optional)" />
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-slate-700">Head of Department (HOD)</label>
+        <select name="headStaffId" className={field} defaultValue="">
+          <option value="">Select HOD (Optional)</option>
+          {staff.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.fullName} ({s.staffCode}){s.designation ? ` — ${s.designation}` : ""}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error ? (

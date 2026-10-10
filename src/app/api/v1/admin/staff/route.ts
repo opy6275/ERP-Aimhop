@@ -23,7 +23,10 @@ const createSchema = z.object({
   joiningDate: z.string().optional().nullable(),
   employmentType: z.string().optional().nullable(),
   status: z.enum(["active", "inactive"]).default("active"),
-  salaryAmount: z.number().min(0).default(0),
+  salaryAmount: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? 0 : val),
+    z.coerce.number().min(0)
+  ).default(0),
   paymentType: z.enum(["monthly", "daily"]).default("monthly"),
   bankName: z.string().optional().nullable(),
   accountNumber: z.string().optional().nullable(),

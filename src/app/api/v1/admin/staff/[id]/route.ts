@@ -23,7 +23,10 @@ const updateSchema = z.object({
   joiningDate: z.string().optional().nullable(),
   employmentType: z.string().optional().nullable(),
   status: z.enum(["active", "inactive"]).optional(),
-  salaryAmount: z.number().min(0).optional(),
+  salaryAmount: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? 0 : val),
+    z.coerce.number().min(0)
+  ).optional(),
   paymentType: z.enum(["monthly", "daily"]).optional(),
   bankName: z.string().optional().nullable(),
   accountNumber: z.string().optional().nullable(),
@@ -88,8 +91,10 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
   const d = parsed.data;
 
-  // Check salary permission if modifying salary
-  if (d.salaryAmount !== undefined && !hasPermission(user, "staff.salary.update")) {
+  // Check salary permission only if modifying salary
+  const currentSalary = decimalToNumber(existing.salaryAmount);
+  const isChangingSalary = d.salaryAmount !== undefined && d.salaryAmount !== currentSalary;
+  if (isChangingSalary && !hasPermission(user, "staff.salary.update")) {
     return apiError("FORBIDDEN", "No permission to update salary amount", 403);
   }
 
@@ -109,12 +114,12 @@ export async function PATCH(request: Request, ctx: Ctx) {
       ...(d.joiningDate !== undefined ? { joiningDate: d.joiningDate ? new Date(d.joiningDate) : null } : {}),
       ...(d.employmentType !== undefined ? { employmentType: d.employmentType } : {}),
       ...(d.status ? { status: d.status } : {}),
-      ...(d.salaryAmount !== undefined ? { salaryAmount: d.salaryAmount } : {}),
+      ...(isChangingSalary ? { salaryAmount: d.salaryAmount } : {}),
       ...(d.paymentType ? { paymentType: d.paymentType } : {}),
-      ...(d.bankName !== undefined ? { bankName: d.bankName } : {}),
-      ...(d.accountNumber !== undefined ? { accountNumber: d.accountNumber } : {}),
-      ...(d.ifsc !== undefined ? { ifsc: d.ifsc } : {}),
-      ...(d.upiId !== undefined ? { upiId: d.upiId } : {}),
+      ...(d.bankName !== undefined && d.bankName !== "••••" ? { bankName: d.bankName } : {}),
+      ...(d.accountNumber !== undefined && (d.accountNumber === null || !d.accountNumber.includes("•")) ? { accountNumber: d.accountNumber } : {}),
+      ...(d.ifsc !== undefined && d.ifsc !== "••••" ? { ifsc: d.ifsc } : {}),
+      ...(d.upiId !== undefined && d.upiId !== "••••" ? { upiId: d.upiId } : {}),
     },
     include: {
       department: { select: { id: true, name: true } },

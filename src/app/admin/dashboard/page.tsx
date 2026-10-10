@@ -8,6 +8,10 @@ import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate, formatInr, formatMonthLabel, toDateOnlyUtc } from "@/lib/format";
 import { computePeriodBalance } from "@/lib/domain";
 import {
+  AttendanceTrendChart,
+  PayrollDisbursementGauge,
+} from "@/components/admin/dashboard-charts";
+import {
   Users,
   CalendarCheck,
   CreditCard,
@@ -17,6 +21,7 @@ import {
   Clock,
   Activity as ActivityIcon,
   CalendarDays,
+  Network,
 } from "@/components/ui/icons";
 
 export default async function AdminDashboardPage() {
@@ -25,6 +30,19 @@ export default async function AdminDashboardPage() {
   const today = toDateOnlyUtc(new Date());
   const now = new Date();
   const periodMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+  // 7-day date range for interactive trend analysis
+  const sevenDays: { dateStr: string; label: string; dateObj: Date }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const dateStr = d.toISOString().slice(0, 10);
+    const label = new Intl.DateTimeFormat("en-IN", {
+      weekday: "short",
+      day: "2-digit",
+      timeZone: "Asia/Kolkata",
+    }).format(d);
+    sevenDays.push({ dateStr, label, dateObj: toDateOnlyUtc(dateStr) });
+  }
 
   const [
     staffCount,
@@ -37,6 +55,7 @@ export default async function AdminDashboardPage() {
     activeStaffRows,
     recentStaff,
     recentAudit,
+    sevenDaysRecords,
   ] = await Promise.all([
     prisma.staff.count(),
     prisma.staff.count({ where: { status: "active" } }),
@@ -70,6 +89,15 @@ export default async function AdminDashboardPage() {
       take: 6,
       include: { actor: { select: { email: true } } },
     }),
+    prisma.attendanceRecord.findMany({
+      where: {
+        date: {
+          gte: sevenDays[0].dateObj,
+          lte: sevenDays[sevenDays.length - 1].dateObj,
+        },
+      },
+      select: { date: true, status: true },
+    }),
   ]);
 
   const attCounts: Record<string, number> = {};
@@ -91,6 +119,35 @@ export default async function AdminDashboardPage() {
     const bal = computePeriodBalance(decimalToNumber(s.salaryAmount), payments);
     pendingTotal += bal.pending;
   }
+
+  const totalCommittedSalary = activeStaffRows.reduce(
+    (sum, s) => sum + decimalToNumber(s.salaryAmount),
+    0
+  );
+
+  const trendData = sevenDays.map((dayItem) => {
+    const dayStr = dayItem.dateStr;
+    const records = sevenDaysRecords.filter(
+      (r) => r.date.toISOString().slice(0, 10) === dayStr
+    );
+    const present = records.filter((r) => r.status === "present").length;
+    const absent = records.filter((r) => r.status === "absent").length;
+    const leave = records.filter((r) => r.status === "leave").length;
+    const halfDay = records.filter((r) => r.status === "half_day").length;
+    const total = records.length;
+    const rate = total > 0 ? Math.round(((present + halfDay * 0.5) / total) * 100) : 0;
+
+    return {
+      date: dayStr,
+      label: dayItem.label,
+      present,
+      absent,
+      leave,
+      halfDay,
+      total,
+      rate,
+    };
+  });
 
   const attendanceTotal = presentToday + absentToday + leaveToday + halfDayToday;
   const presenceRate =
@@ -147,6 +204,14 @@ export default async function AdminDashboardPage() {
             >
               <CreditCard size={16} className="text-emerald-600" />
               <span>Record Payment</span>
+            </Link>
+
+            <Link
+              href="/admin/departments?tab=organogram"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900"
+            >
+              <Network size={16} className="text-purple-600" />
+              <span>Organogram Tree</span>
             </Link>
 
             {pendingLeavesCount > 0 && (
@@ -273,6 +338,17 @@ export default async function AdminDashboardPage() {
           tone={pendingTotal > 0 ? "warning" : "default"}
           icon={<Clock size={20} />}
           hint="Outstanding balance"
+        />
+      </div>
+
+      {/* Interactive Analytics Dashboards */}
+      <div className="mt-7 grid gap-6 grid-cols-1 lg:grid-cols-2">
+        <AttendanceTrendChart data={trendData} />
+        <PayrollDisbursementGauge
+          committed={totalCommittedSalary}
+          paid={monthPaid}
+          pending={pendingTotal}
+          periodLabel={formatMonthLabel(periodMonth)}
         />
       </div>
 

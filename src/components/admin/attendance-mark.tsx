@@ -2,7 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { CheckCircle2, Clock } from "@/components/ui/icons";
+import {
+  CheckCircle2,
+  Clock,
+  Filter,
+  Search,
+  CheckSquare,
+  Square,
+  Users,
+} from "lucide-react";
 
 type StaffRow = {
   id: string;
@@ -34,12 +42,35 @@ export function AttendanceMark({
   const router = useRouter();
   const [day, setDay] = useState(date);
   const [rows, setRows] = useState<Record<string, string>>(
-    Object.fromEntries(staff.map((s) => [s.id, s.current || "present"])),
+    Object.fromEntries(staff.map((s) => [s.id, s.current || "present"]))
   );
+  const [selectedStaffIds, setSelectedStaffIds] = useState<Set<string>>(new Set());
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
 
-  const list = useMemo(() => staff, [staff]);
+  // Extract distinct departments for filter
+  const departments = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of staff) {
+      if (s.department?.name) set.add(s.department.name);
+    }
+    return Array.from(set).sort();
+  }, [staff]);
+
+  // Filtered staff list based on department and search
+  const filteredList = useMemo(() => {
+    return staff.filter((s) => {
+      const matchDept = departmentFilter === "all" || s.department?.name === departmentFilter;
+      const q = searchQuery.toLowerCase().trim();
+      const matchSearch =
+        !q ||
+        s.fullName.toLowerCase().includes(q) ||
+        s.staffCode.toLowerCase().includes(q);
+      return matchDept && matchSearch;
+    });
+  }, [staff, departmentFilter, searchQuery]);
 
   const summary = useMemo(() => {
     const s = { present: 0, absent: 0, leave: 0, half_day: 0, holiday: 0 };
@@ -61,7 +92,7 @@ export function AttendanceMark({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: day,
-          records: list.map((s) => ({
+          records: staff.map((s) => ({
             staffId: s.id,
             status: rows[s.id] || "present",
           })),
@@ -73,7 +104,7 @@ export function AttendanceMark({
         return;
       }
       setMessage({
-        text: `Successfully saved attendance for ${data.records?.length ?? list.length} staff members.`,
+        text: `Successfully saved attendance for ${data.records?.length ?? staff.length} staff members.`,
         success: true,
       });
       router.refresh();
@@ -84,8 +115,51 @@ export function AttendanceMark({
     }
   }
 
+  // Bulk actions
   function markAll(status: string) {
-    setRows(Object.fromEntries(list.map((s) => [s.id, status])));
+    setRows(Object.fromEntries(staff.map((s) => [s.id, status])));
+  }
+
+  function markFiltered(status: string) {
+    setRows((prev) => {
+      const next = { ...prev };
+      for (const s of filteredList) {
+        next[s.id] = status;
+      }
+      return next;
+    });
+  }
+
+  function markSelected(status: string) {
+    if (selectedStaffIds.size === 0) return;
+    setRows((prev) => {
+      const next = { ...prev };
+      for (const id of selectedStaffIds) {
+        next[id] = status;
+      }
+      return next;
+    });
+  }
+
+  // Checkbox helpers
+  const isAllSelected =
+    filteredList.length > 0 && filteredList.every((s) => selectedStaffIds.has(s.id));
+
+  function toggleSelectAll() {
+    if (isAllSelected) {
+      setSelectedStaffIds(new Set());
+    } else {
+      setSelectedStaffIds(new Set(filteredList.map((s) => s.id)));
+    }
+  }
+
+  function toggleSelectOne(id: string) {
+    setSelectedStaffIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -93,23 +167,23 @@ export function AttendanceMark({
 
   function changeDate(newDate: string) {
     setDay(newDate);
-    router.push(`/admin/attendance?date=${newDate}`);
+    router.push(`/admin/attendance?tab=daily&date=${newDate}`);
   }
 
   return (
     <div className="space-y-6">
-      {/* Date & Bulk Action Toolbar */}
-      <div className="flex flex-col gap-4 rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Date & Global Action Toolbar */}
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Selected Date
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Roster Date
             </label>
             <input
               type="date"
               value={day}
               onChange={(e) => changeDate(e.target.value)}
-              className="mt-1 block rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 shadow-2xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="mt-1 block rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-1.5 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
@@ -117,9 +191,9 @@ export function AttendanceMark({
             <button
               type="button"
               onClick={() => changeDate(todayStr)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
                 day === todayStr
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white shadow-xs"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
               }`}
             >
@@ -128,9 +202,9 @@ export function AttendanceMark({
             <button
               type="button"
               onClick={() => changeDate(yesterdayStr)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
                 day === yesterdayStr
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white shadow-xs"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
               }`}
             >
@@ -139,65 +213,173 @@ export function AttendanceMark({
           </div>
         </div>
 
-        {/* Bulk quick actions & Save Button */}
+        {/* Global Save Button */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => markAll("present")}
-              className="rounded-lg px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition"
-            >
-              All Present
-            </button>
-            <button
-              type="button"
-              onClick={() => markAll("absent")}
-              className="rounded-lg px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-700 transition"
-            >
-              All Absent
-            </button>
-          </div>
-
           <button
             type="button"
             onClick={save}
-            disabled={loading || list.length === 0}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
+            disabled={loading || staff.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-700 disabled:opacity-60 cursor-pointer"
           >
             {loading ? (
               <>
                 <Clock size={16} className="animate-spin" />
-                <span>Saving…</span>
+                <span>Saving Roster…</span>
               </>
             ) : (
               <>
                 <CheckCircle2 size={16} />
-                <span>Save Attendance</span>
+                <span>Save Attendance Roster</span>
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Live Summary Bar */}
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="font-semibold text-slate-500 mr-1">Current Status:</span>
-        <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 font-semibold text-emerald-800">
-          {summary.present} Present
-        </span>
-        <span className="rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 font-semibold text-rose-800">
-          {summary.absent} Absent
-        </span>
-        <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 font-semibold text-amber-800">
-          {summary.leave} Leave
-        </span>
-        <span className="rounded-full bg-orange-50 border border-orange-200 px-2.5 py-0.5 font-semibold text-orange-800">
-          {summary.half_day} Half Day
+      {/* Productivity Accelerators & Bulk Operations Toolbar */}
+      <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/60 to-slate-50/60 p-4 space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Filters: Department & Search */}
+          <div className="flex flex-wrap items-center gap-2.5 flex-1">
+            <div className="relative min-w-48">
+              <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-700 outline-none transition focus:border-blue-500"
+              >
+                <option value="all">All Departments ({staff.length})</option>
+                {departments.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative flex-1 min-w-44 max-w-xs">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Quick search employee…"
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 placeholder-slate-400 outline-none transition focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Bulk Preset Accelerators */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
+            <span className="text-[11px] text-slate-500 mr-1 flex items-center gap-1 font-bold uppercase tracking-wider">
+              <CheckSquare size={13} className="text-slate-500" />
+              Batch Actions:
+            </span>
+
+            {departmentFilter !== "all" ? (
+              <button
+                type="button"
+                onClick={() => markFiltered("present")}
+                className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 cursor-pointer"
+              >
+                Mark {departmentFilter} Present
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => markAll("present")}
+                className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 cursor-pointer"
+              >
+                All Present
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => markAll("absent")}
+              className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 cursor-pointer"
+            >
+              All Absent
+            </button>
+          </div>
+        </div>
+
+        {/* Selected Checkbox Batch Action Bar (shows when items are checked) */}
+        {selectedStaffIds.size > 0 && (
+          <div className="pt-2 border-t border-blue-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded-md">
+                {selectedStaffIds.size} Selected
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedStaffIds(new Set())}
+                className="text-slate-500 hover:text-slate-700 underline text-[11px] cursor-pointer"
+              >
+                Clear Selection
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 text-[11px]">Set selected to:</span>
+              <button
+                type="button"
+                onClick={() => markSelected("present")}
+                className="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-semibold hover:bg-emerald-700 cursor-pointer"
+              >
+                Present
+              </button>
+              <button
+                type="button"
+                onClick={() => markSelected("absent")}
+                className="px-2 py-0.5 rounded-md bg-rose-600 text-white font-semibold hover:bg-rose-700 cursor-pointer"
+              >
+                Absent
+              </button>
+              <button
+                type="button"
+                onClick={() => markSelected("leave")}
+                className="px-2 py-0.5 rounded-md bg-amber-600 text-white font-semibold hover:bg-amber-700 cursor-pointer"
+              >
+                Leave
+              </button>
+              <button
+                type="button"
+                onClick={() => markSelected("half_day")}
+                className="px-2 py-0.5 rounded-md bg-orange-600 text-white font-semibold hover:bg-orange-700 cursor-pointer"
+              >
+                Half Day
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Live Summary Stats Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-white p-3 rounded-xl border border-slate-200">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-semibold text-slate-500 mr-1">Roster Summary:</span>
+          <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 font-bold text-emerald-800">
+            {summary.present} Present
+          </span>
+          <span className="rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 font-bold text-rose-800">
+            {summary.absent} Absent
+          </span>
+          <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 font-bold text-amber-800">
+            {summary.leave} Leave
+          </span>
+          <span className="rounded-full bg-orange-50 border border-orange-200 px-2.5 py-0.5 font-bold text-orange-800">
+            {summary.half_day} Half Day
+          </span>
+        </div>
+
+        <span className="text-slate-500 font-mono text-[11px]">
+          Showing {filteredList.length} of {staff.length} workforce
         </span>
       </div>
 
       {/* Feedback Toast */}
-      {message ? (
+      {message && (
         <div
           className={`flex items-center gap-2 rounded-xl border p-3.5 text-sm font-medium ${
             message.success
@@ -208,22 +390,37 @@ export function AttendanceMark({
           <CheckCircle2 size={18} className={message.success ? "text-emerald-600" : "text-rose-600"} />
           <span>{message.text}</span>
         </div>
-      ) : null}
+      )}
 
-      {/* Staff Marking Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs">
+      {/* Staff Marking Table with Checkboxes */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-slate-100 bg-slate-50/90 text-xs font-semibold tracking-wider text-slate-500 uppercase">
               <tr>
-                <th className="px-5 py-3.5">Employee</th>
-                <th className="px-5 py-3.5">Department</th>
-                <th className="px-5 py-3.5">Attendance Status (Click to set)</th>
+                <th className="px-4 py-3.5 w-10">
+                  <button
+                    type="button"
+                    onClick={toggleSelectAll}
+                    className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                    title={isAllSelected ? "Deselect all" : "Select all"}
+                  >
+                    {isAllSelected ? (
+                      <CheckSquare size={16} className="text-blue-600" />
+                    ) : (
+                      <Square size={16} />
+                    )}
+                  </button>
+                </th>
+                <th className="px-4 py-3.5">Employee</th>
+                <th className="px-4 py-3.5">Department</th>
+                <th className="px-4 py-3.5">Attendance Status (1-Click Set)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {list.map((s) => {
+              {filteredList.map((s) => {
                 const currentStatus = rows[s.id] || "present";
+                const isChecked = selectedStaffIds.has(s.id);
                 const initials = s.fullName
                   .split(" ")
                   .map((n) => n[0])
@@ -231,26 +428,44 @@ export function AttendanceMark({
                   .slice(0, 2);
 
                 return (
-                  <tr key={s.id} className="transition-colors hover:bg-slate-50/60">
-                    <td className="px-5 py-3.5">
+                  <tr
+                    key={s.id}
+                    className={`transition-colors ${
+                      isChecked ? "bg-blue-50/40" : "hover:bg-slate-50/60"
+                    }`}
+                  >
+                    <td className="px-4 py-3.5">
+                      <button
+                        type="button"
+                        onClick={() => toggleSelectOne(s.id)}
+                        className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                      >
+                        {isChecked ? (
+                          <CheckSquare size={16} className="text-blue-600" />
+                        ) : (
+                          <Square size={16} />
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 font-mono text-xs font-bold text-slate-700">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 font-mono text-xs font-bold text-blue-700 border border-blue-100">
                           {initials}
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900">{s.fullName}</p>
-                          <p className="text-xs text-slate-400">{s.staffCode}</p>
+                          <p className="text-xs text-slate-400 font-mono">{s.staffCode}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center rounded-lg border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">
+                    <td className="px-4 py-3.5">
+                      <span className="inline-flex items-center rounded-lg border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
                         {s.department.name}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-3.5">
                       {/* Segmented Button Group */}
-                      <div className="inline-flex flex-wrap rounded-lg border border-slate-200/90 bg-slate-100/70 p-0.5 gap-0.5 sm:p-1 sm:gap-1">
+                      <div className="inline-flex flex-wrap rounded-xl border border-slate-200/90 bg-slate-100/70 p-0.5 gap-0.5 sm:p-1 sm:gap-1">
                         {STATUS_OPTIONS.map((opt) => {
                           const isSelected = currentStatus === opt.value;
                           return (
@@ -258,7 +473,7 @@ export function AttendanceMark({
                               key={opt.value}
                               type="button"
                               onClick={() => setRows((prev) => ({ ...prev, [s.id]: opt.value }))}
-                              className={`rounded-md px-2 py-1 text-[11px] font-semibold transition-all cursor-pointer sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-xs ${
+                              className={`rounded-lg px-2 py-1 text-[11px] font-semibold transition-all cursor-pointer sm:px-3 sm:py-1.5 sm:text-xs ${
                                 isSelected
                                   ? opt.activeClass
                                   : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
@@ -273,10 +488,10 @@ export function AttendanceMark({
                   </tr>
                 );
               })}
-              {list.length === 0 ? (
+              {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-5 py-12 text-center text-sm text-slate-400">
-                    No active staff enrolled. Add staff members first.
+                  <td colSpan={4} className="px-5 py-12 text-center text-sm text-slate-400">
+                    No matching staff members found with current filters.
                   </td>
                 </tr>
               ) : null}

@@ -69,6 +69,9 @@ import {
   FileSpreadsheet,
   UploadCloud,
   File,
+  Network,
+  ListFilter,
+  Crown,
 } from "lucide-react";
 
 export type IconProps = LucideProps;
@@ -143,4 +146,7 @@ export {
   FileSpreadsheet,
   UploadCloud,
   File,
+  Network,
+  ListFilter,
+  Crown,
 };
