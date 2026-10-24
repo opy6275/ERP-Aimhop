@@ -179,24 +179,40 @@ export function QuickPunchClient({
       {/* ============================================================== */}
       {successData ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 text-center shadow-sm space-y-5 animate-in zoom-in-95 duration-200">
-          {/* Success Checkmark Badge */}
-          <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border-2 border-emerald-200 shadow-sm">
+          {/* Status Badge */}
+          <div
+            className={`relative mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 shadow-sm ${
+              successData.alreadyMarked
+                ? "bg-blue-50 text-blue-600 border-blue-200"
+                : "bg-emerald-50 text-emerald-600 border-emerald-200"
+            }`}
+          >
             <CheckCircle2 size={44} className="stroke-[2.5]" />
-            <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs shadow-xs">
+            <span
+              className={`absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full text-white font-bold text-xs shadow-xs ${
+                successData.alreadyMarked ? "bg-blue-600" : "bg-emerald-600"
+              }`}
+            >
               <Sparkles size={12} />
             </span>
           </div>
 
           <div className="space-y-1.5">
-            <div className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold uppercase tracking-wider">
+            <div
+              className={`inline-block px-3 py-1 rounded-full border text-[11px] font-bold uppercase tracking-wider ${
+                successData.alreadyMarked
+                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-200"
+              }`}
+            >
               {successData.alreadyMarked ? "Already Marked Today" : "Attendance Recorded (Present)"}
             </div>
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-              Welcome, {successData.staff?.fullName || "Staff Member"}!
+              {successData.alreadyMarked ? "Aap Pehle Hi Punch Kar Chuke Hain!" : `Welcome, ${successData.staff?.fullName || "Staff Member"}!`}
             </h2>
-            <p className="text-xs text-emerald-700 font-medium">
+            <p className={`text-xs font-medium ${successData.alreadyMarked ? "text-blue-700" : "text-emerald-700"}`}>
               {successData.alreadyMarked
-                ? "Aapki attendance aaj ke din pehle se hi recorded hai."
+                ? "Aapki attendance aaj ke din pehle se hi recorded hai. Dobara punch karne ki zaroorat nahi hai."
                 : "Aapki attendance safaltapoorvak lag chuki hai (Present)."}
             </p>
           </div>
@@ -223,10 +239,17 @@ export function QuickPunchClient({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-500 flex items-center gap-1.5 font-medium">
-                <Clock size={13} className="text-amber-600" /> Punch-In Time:
+                <Clock size={13} className="text-amber-600" /> {successData.alreadyMarked ? "Initial Punch-In Time:" : "Punch-In Time:"}
               </span>
               <span className="font-mono font-bold text-emerald-700">{successData.checkinTime} IST</span>
             </div>
+            {successData.alreadyMarked && (
+              <div className="pt-2 border-t border-slate-200 text-center">
+                <p className="text-[11px] text-blue-700 font-medium">
+                  ℹ️ Subah ka check-in time surakshit hai. Overwrite nahi kiya gaya.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}

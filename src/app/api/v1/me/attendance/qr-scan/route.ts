@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // 3. Upsert attendance record for today
+  // 3. Upsert attendance record for today (or retain existing punch-in)
   const existing = await prisma.attendanceRecord.findUnique({
     where: { staffId_date: { staffId: user.staffId, date: today } },
   });
@@ -80,44 +80,60 @@ export async function POST(request: Request) {
     ? `${note} (QR Check-In at ${checkinTimeStr})`
     : `Verified via Office QR Scan at ${checkinTimeStr}`;
 
-  const record = await prisma.attendanceRecord.upsert({
-    where: { staffId_date: { staffId: user.staffId, date: today } },
-    update: {
-      status: "present",
-      approvalStatus: "approved",
-      note: checkinNote,
-      markedById: user.id,
-    },
-    create: {
-      staffId: user.staffId,
-      date: today,
-      status: "present",
-      approvalStatus: "approved",
-      note: checkinNote,
-      markedById: user.id,
-    },
-  });
+  const isAlreadyMarked = Boolean(existing && existing.status === "present");
+  let displayedTime = checkinTimeStr;
 
-  // 4. Record in audit trail
-  await writeAudit({
-    actorUserId: user.id,
-    action: "attendance.qr_checkin",
-    entityType: "attendance",
-    entityId: record.id,
-    targetLabel: `${staff.fullName} (${staff.staffCode}) - QR Check-In at ${checkinTimeStr}`,
-  });
+  if (isAlreadyMarked && existing?.note) {
+    const timeMatch = existing.note.match(/(\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|am|pm))/);
+    if (timeMatch) {
+      displayedTime = timeMatch[1];
+    }
+  }
+
+  let record = existing;
+
+  if (!isAlreadyMarked) {
+    record = await prisma.attendanceRecord.upsert({
+      where: { staffId_date: { staffId: user.staffId, date: today } },
+      update: {
+        status: "present",
+        approvalStatus: "approved",
+        note: checkinNote,
+        markedById: user.id,
+      },
+      create: {
+        staffId: user.staffId,
+        date: today,
+        status: "present",
+        approvalStatus: "approved",
+        note: checkinNote,
+        markedById: user.id,
+      },
+    });
+
+    // 4. Record in audit trail
+    await writeAudit({
+      actorUserId: user.id,
+      action: "attendance.qr_checkin",
+      entityType: "attendance",
+      entityId: record.id,
+      targetLabel: `${staff.fullName} (${staff.staffCode}) - QR Check-In at ${checkinTimeStr}`,
+    });
+  }
 
   return apiOk({
     success: true,
-    message: `Attendance verified successfully! Welcome, ${staff.fullName}.`,
-    checkinTime: checkinTimeStr,
-    alreadyMarked: Boolean(existing && existing.status === "present"),
+    alreadyMarked: isAlreadyMarked,
+    message: isAlreadyMarked
+      ? `Aapki attendance aaj pehle se hi recorded hai! (Punch-In: ${displayedTime} IST)`
+      : `Attendance verified successfully! Welcome, ${staff.fullName}.`,
+    checkinTime: displayedTime,
     record: {
-      id: record.id,
-      status: record.status,
-      approvalStatus: record.approvalStatus,
-      date: record.date.toISOString(),
-      note: record.note,
+      id: record!.id,
+      status: record!.status,
+      approvalStatus: record!.approvalStatus,
+      date: record!.date.toISOString(),
+      note: record!.note,
     },
     staff: {
       fullName: staff.fullName,

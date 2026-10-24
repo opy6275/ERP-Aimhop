@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   const cleanUpper = cleanId.toUpperCase();
   const cleanLower = cleanId.toLowerCase();
 
-  // Look up staff by staffCode, mobile, email, or ID (SQLite compatible)
+  // Look up staff by staffCode, mobile, email, linked user email, or ID (SQLite compatible)
   const staff = await prisma.staff.findFirst({
     where: {
       OR: [
@@ -42,6 +42,8 @@ export async function POST(request: Request) {
         { email: cleanId },
         { email: cleanLower },
         { id: cleanId },
+        { user: { email: cleanId } },
+        { user: { email: cleanLower } },
       ],
     },
     include: {
@@ -75,39 +77,51 @@ export async function POST(request: Request) {
 
   const alreadyMarked = Boolean(existing && existing.status === "present");
 
-  const record = await prisma.attendanceRecord.upsert({
-    where: { staffId_date: { staffId: staff.id, date: today } },
-    update: {
-      status: "present",
-      approvalStatus: "approved",
-      note: `Wall QR Punch-In at ${checkinTimeStr}`,
-      markedById: staff.user?.id || null,
-    },
-    create: {
-      staffId: staff.id,
-      date: today,
-      status: "present",
-      approvalStatus: "approved",
-      note: `Wall QR Punch-In at ${checkinTimeStr}`,
-      markedById: staff.user?.id || null,
-    },
-  });
+  let recordedCheckinTime = checkinTimeStr;
+  if (existing?.note) {
+    const match = /at\s+([0-9:apm\s]+IST|[0-9:apm\s]+)/i.exec(existing.note);
+    if (match && match[1]) {
+      recordedCheckinTime = match[1].trim();
+    }
+  }
 
-  await writeAudit({
-    actorUserId: staff.user?.id || null,
-    action: "attendance.quick_punch",
-    entityType: "attendance",
-    entityId: record.id,
-    targetLabel: `${staff.fullName} (${staff.staffCode}) - QR Punch-In at ${checkinTimeStr}`,
-  });
+  // If NOT already marked today, record verified attendance
+  let record = existing;
+  if (!alreadyMarked) {
+    record = await prisma.attendanceRecord.upsert({
+      where: { staffId_date: { staffId: staff.id, date: today } },
+      update: {
+        status: "present",
+        approvalStatus: "approved",
+        note: `Wall QR Punch-In at ${checkinTimeStr}`,
+        markedById: staff.user?.id || null,
+      },
+      create: {
+        staffId: staff.id,
+        date: today,
+        status: "present",
+        approvalStatus: "approved",
+        note: `Wall QR Punch-In at ${checkinTimeStr}`,
+        markedById: staff.user?.id || null,
+      },
+    });
+
+    await writeAudit({
+      actorUserId: staff.user?.id || null,
+      action: "attendance.quick_punch",
+      entityType: "attendance",
+      entityId: record.id,
+      targetLabel: `${staff.fullName} (${staff.staffCode}) - QR Punch-In at ${checkinTimeStr}`,
+    });
+  }
 
   return apiOk({
     success: true,
     alreadyMarked,
     message: alreadyMarked
-      ? `Aapki attendance aaj ke liye pehle se recorded hai.`
+      ? `Aapki attendance aaj pehle se hi recorded hai!`
       : `Attendance lag chuki hai (Present)! Welcome, ${staff.fullName}.`,
-    checkinTime: checkinTimeStr,
+    checkinTime: recordedCheckinTime,
     staff: {
       id: staff.id,
       fullName: staff.fullName,

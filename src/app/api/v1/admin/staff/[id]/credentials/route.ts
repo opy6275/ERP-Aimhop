@@ -113,6 +113,12 @@ export async function POST(request: Request, ctx: Ctx) {
       select: { id: true, email: true, isActive: true, lastLoginAt: true },
     });
 
+    // Synchronize staff record email
+    await prisma.staff.update({
+      where: { id: staff.id },
+      data: { email: loginEmail },
+    });
+
     await writeAudit({
       actorUserId: admin.id,
       action: "user.update",
@@ -142,6 +148,12 @@ export async function POST(request: Request, ctx: Ctx) {
         isActive,
       },
       select: { id: true, email: true, isActive: true, lastLoginAt: true },
+    });
+
+    // Synchronize staff record email
+    await prisma.staff.update({
+      where: { id: staff.id },
+      data: { email: loginEmail },
     });
 
     await writeAudit({

@@ -7,6 +7,7 @@ import { X, Camera, CheckCircle2, AlertCircle, RefreshCw, Upload, ShieldCheck, S
 type SuccessData = {
   checkinTime: string;
   message: string;
+  alreadyMarked?: boolean;
   staff: {
     fullName: string;
     staffCode: string;
@@ -241,19 +242,45 @@ export function QrScannerModal({
           {scanResult ? (
             /* SUCCESS TRIGGER STATE */
             <div className="py-6 text-center space-y-5 animate-in zoom-in-95 duration-300">
-              <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500 shadow-lg shadow-emerald-500/20 animate-bounce">
+              <div
+                className={`relative mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 shadow-lg animate-bounce ${
+                  scanResult.alreadyMarked
+                    ? "bg-blue-500/20 text-blue-400 border-blue-500 shadow-blue-500/20"
+                    : "bg-emerald-500/20 text-emerald-400 border-emerald-500 shadow-emerald-500/20"
+                }`}
+              >
                 <CheckCircle2 size={44} className="stroke-[2.5]" />
-                <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-slate-950 font-bold text-xs">
+                <span
+                  className={`absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full text-slate-950 font-bold text-xs ${
+                    scanResult.alreadyMarked ? "bg-blue-400" : "bg-emerald-500"
+                  }`}
+                >
                   <Sparkles size={12} />
                 </span>
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xl font-extrabold text-white">Check-In Successful!</h4>
-                <p className="text-sm text-emerald-400 font-semibold">{scanResult.message}</p>
+                <div
+                  className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
+                    scanResult.alreadyMarked
+                      ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                      : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                  }`}
+                >
+                  {scanResult.alreadyMarked ? "Already Marked Today" : "Attendance Recorded"}
+                </div>
+                <h4 className="text-xl font-extrabold text-white">
+                  {scanResult.alreadyMarked ? "Attendance Pehle Se Recorded Hai" : "Check-In Successful!"}
+                </h4>
+                <p className={`text-sm font-semibold ${scanResult.alreadyMarked ? "text-blue-300" : "text-emerald-400"}`}>
+                  {scanResult.message}
+                </p>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/80 text-xs font-mono text-slate-300 mt-2">
-                  <ShieldCheck size={14} className="text-emerald-400" />
-                  Verified at: <span className="text-emerald-300 font-bold">{scanResult.checkinTime}</span>
+                  <ShieldCheck size={14} className={scanResult.alreadyMarked ? "text-blue-400" : "text-emerald-400"} />
+                  {scanResult.alreadyMarked ? "Initial Punch-In at:" : "Verified at:"}{" "}
+                  <span className={`font-bold ${scanResult.alreadyMarked ? "text-blue-300" : "text-emerald-300"}`}>
+                    {scanResult.checkinTime}
+                  </span>
                 </div>
               </div>
 
@@ -278,7 +305,11 @@ export function QrScannerModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98]"
+                className={`w-full flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
+                  scanResult.alreadyMarked
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-500/25 hover:from-blue-500 hover:to-indigo-500"
+                    : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/25 hover:from-emerald-500 hover:to-teal-500"
+                }`}
               >
                 <CheckCircle2 size={18} />
                 <span>Attendance Verified — Done</span>
