@@ -12,7 +12,6 @@ import {
   User,
   ArrowRight,
   RefreshCw,
-  LogOut,
 } from "@/components/ui/icons";
 
 type StaffData = {
@@ -167,82 +166,84 @@ export function QuickPunchClient({
     <div className="w-full max-w-md mx-auto">
       {/* Brand Header */}
       <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-semibold text-blue-400 mb-2">
-          <Sparkles size={13} />
-          <span>AimHop Office Attendance</span>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-xs font-semibold text-blue-700 mb-2.5">
+          <Sparkles size={13} className="text-blue-600" />
+          <span>Office Wall QR Attendance</span>
         </div>
-        <h1 className="text-2xl font-black tracking-tight text-white">{companyName}</h1>
-        <p className="text-xs text-slate-400 font-medium mt-0.5">Instant Wall QR Punch-In</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{companyName}</h1>
+        <p className="text-xs text-slate-500 font-medium mt-0.5">Instant Contactless Punch-In</p>
       </div>
 
       {/* ============================================================== */}
       {/* 1. SUCCESS STATE: DIRECT ACCESS & ATTENDANCE RECORDED */}
       {/* ============================================================== */}
       {successData ? (
-        <div className="rounded-3xl border border-emerald-500/40 bg-slate-900/95 p-6 text-center shadow-2xl backdrop-blur-md space-y-5 animate-in zoom-in-95 duration-200">
-          <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500 shadow-xl shadow-emerald-500/25 animate-bounce">
-            <CheckCircle2 size={46} className="stroke-[2.5]" />
-            <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-slate-950 font-bold text-xs">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 text-center shadow-sm space-y-5 animate-in zoom-in-95 duration-200">
+          {/* Success Checkmark Badge */}
+          <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border-2 border-emerald-200 shadow-sm">
+            <CheckCircle2 size={44} className="stroke-[2.5]" />
+            <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs shadow-xs">
               <Sparkles size={12} />
             </span>
           </div>
 
           <div className="space-y-1.5">
-            <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-extrabold uppercase tracking-wider">
+            <div className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold uppercase tracking-wider">
               {successData.alreadyMarked ? "Already Marked Today" : "Attendance Recorded (Present)"}
             </div>
-            <h2 className="text-2xl font-black text-white tracking-tight">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
               Welcome, {successData.staff?.fullName || "Staff Member"}!
             </h2>
-            <p className="text-xs text-emerald-400 font-semibold">
+            <p className="text-xs text-emerald-700 font-medium">
               {successData.alreadyMarked
                 ? "Aapki attendance aaj ke din pehle se hi recorded hai."
                 : "Aapki attendance safaltapoorvak lag chuki hai (Present)."}
             </p>
           </div>
 
-          {/* Ticket Details */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-left space-y-2 text-xs">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-              <span className="text-slate-400 flex items-center gap-1.5">
-                <User size={13} className="text-blue-400" /> Employee Name:
+          {/* Ticket Details Card */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-left space-y-2.5 text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+              <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                <User size={13} className="text-blue-600" /> Employee Name:
               </span>
-              <span className="font-bold text-white">{successData.staff?.fullName || "Staff Member"}</span>
+              <span className="font-bold text-slate-900">{successData.staff?.fullName || "Staff Member"}</span>
             </div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-              <span className="text-slate-400 flex items-center gap-1.5">
-                <ShieldCheck size={13} className="text-emerald-400" /> Staff ID:
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+              <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                <ShieldCheck size={13} className="text-emerald-600" /> Staff ID:
               </span>
-              <span className="font-mono font-bold text-blue-400">{successData.staff?.staffCode || "N/A"}</span>
+              <span className="font-mono font-bold text-blue-600">{successData.staff?.staffCode || "N/A"}</span>
             </div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-              <span className="text-slate-400 flex items-center gap-1.5">
-                <Building2 size={13} className="text-blue-400" /> Department:
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+              <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                <Building2 size={13} className="text-blue-600" /> Department:
               </span>
-              <span className="font-semibold text-slate-200">{successData.staff?.department || "General"}</span>
+              <span className="font-semibold text-slate-800">{successData.staff?.department || "General"}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-400 flex items-center gap-1.5">
-                <Clock size={13} className="text-amber-400" /> Punch-In Time:
+              <span className="text-slate-500 flex items-center gap-1.5 font-medium">
+                <Clock size={13} className="text-amber-600" /> Punch-In Time:
               </span>
-              <span className="font-mono font-bold text-emerald-300">{successData.checkinTime} IST</span>
+              <span className="font-mono font-bold text-emerald-700">{successData.checkinTime} IST</span>
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="space-y-2 pt-2">
+          <div className="space-y-2.5 pt-1">
             <Link
               href="/app/attendance"
-              className="flex items-center justify-center gap-2 w-full rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-xl shadow-emerald-500/25 hover:from-emerald-500 hover:to-teal-500 transition active:scale-[0.98]"
+              className="flex items-center justify-center gap-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-xs transition active:scale-[0.99]"
             >
-              <CheckCircle2 size={18} />
-              <span>Go to Staff Portal / Dashboard</span>
+              <CheckCircle2 size={17} />
+              <span>Go to Staff Dashboard</span>
+              <ArrowRight size={15} />
             </Link>
 
             <button
               type="button"
               onClick={handleClearSaved}
-              className="w-full text-center text-xs text-slate-500 hover:text-slate-400 py-1 cursor-pointer transition"
+              className="w-full text-center text-xs text-slate-500 hover:text-slate-800 py-1 cursor-pointer transition"
             >
               Dusre Staff ka attendance lagayein? (Switch Account)
             </button>
@@ -252,11 +253,11 @@ export function QuickPunchClient({
         /* ============================================================== */
         /* 2. DIRECT ACCESS PUNCH CARD */
         /* ============================================================== */
-        <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-6 shadow-2xl backdrop-blur-md space-y-5">
-          <div className="text-center space-y-1.5">
-            <h2 className="text-xl font-black text-white">Punch In Attendance</h2>
-            <p className="text-xs text-slate-400">
-              Apna Staff ID (e.g. STAFF-00001) ya Registered Mobile Number daalein
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm space-y-5">
+          <div className="text-center space-y-1">
+            <h2 className="text-xl font-bold text-slate-900">Punch In Attendance</h2>
+            <p className="text-xs text-slate-500">
+              Apna Staff ID (e.g. STAFF-00005) ya Registered Mobile Number enter karein
             </p>
           </div>
 
@@ -271,15 +272,15 @@ export function QuickPunchClient({
                   setIdentifier(e.target.value);
                   setErrorMessage(null);
                 }}
-                placeholder="Staff ID (e.g. STAFF-00001) ya Mobile"
-                className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3.5 text-sm text-white placeholder-slate-500 font-mono focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all text-center font-bold tracking-wide"
+                placeholder="Staff ID (e.g. STAFF-00005) ya Mobile"
+                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 font-mono focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/15 transition-all text-center font-bold tracking-wider"
               />
             </div>
 
             {/* ERROR MESSAGE (CHOTA TEXT AS REQUESTED BY USER) */}
             {errorMessage && (
-              <div className="flex items-center justify-center gap-1.5 p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-xs text-rose-300 font-semibold animate-in fade-in">
-                <AlertCircle size={15} className="shrink-0 text-rose-400" />
+              <div className="flex items-center justify-center gap-1.5 p-2.5 rounded-lg border border-amber-200 bg-amber-50 text-xs text-amber-900 font-medium animate-in fade-in">
+                <AlertCircle size={15} className="shrink-0 text-amber-600" />
                 <span>{errorMessage}</span>
               </div>
             )}
@@ -287,7 +288,7 @@ export function QuickPunchClient({
             <button
               type="submit"
               disabled={loading || !identifier.trim()}
-              className="flex items-center justify-center gap-2 w-full rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-indigo-500 transition active:scale-[0.98] cursor-pointer disabled:opacity-50"
+              className="flex items-center justify-center gap-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 py-3 text-sm font-semibold text-white shadow-xs transition active:scale-[0.99] cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -296,7 +297,7 @@ export function QuickPunchClient({
                 </>
               ) : (
                 <>
-                  <CheckCircle2 size={18} />
+                  <CheckCircle2 size={17} />
                   <span>Punch In Attendance</span>
                 </>
               )}
@@ -304,7 +305,7 @@ export function QuickPunchClient({
           </form>
 
           {/* Quick Notice */}
-          <div className="pt-2 border-t border-slate-800/80 text-center text-[11px] text-slate-500">
+          <div className="pt-2 border-t border-slate-100 text-center text-[11px] text-slate-400">
             <span>Ek baar punch karne ke baad aapka phone aapko yaad rakhega.</span>
           </div>
         </div>

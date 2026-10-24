@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       id: staff.id,
       fullName: staff.fullName,
       staffCode: staff.staffCode,
-      department: staff.department.name,
+      department: staff.department?.name || "General",
       designation: staff.designation,
     },
   });

@@ -5,6 +5,7 @@ import { toDateOnlyUtc } from "@/lib/format";
 import { writeAudit } from "@/lib/audit";
 import { verifyOfficeSignature } from "@/lib/qr";
 import { AlertTriangle } from "@/components/ui/icons";
+import { AimHopLogo } from "@/components/ui/aimhop-logo";
 import { QuickPunchClient } from "@/components/attendance/quick-punch-client";
 
 export const dynamic = "force-dynamic";
@@ -29,26 +30,37 @@ export default async function AttendanceScanLandingPage({
   // If QR code signature is physically invalid or tampered
   if (!isQrValid) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="rounded-3xl border border-rose-900/40 bg-slate-900/90 p-6 text-center shadow-2xl backdrop-blur-md space-y-4">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
-              <AlertTriangle size={36} />
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between p-4 sm:p-8">
+        <header className="w-full max-w-md mx-auto flex items-center justify-between pb-4">
+          <AimHopLogo size={32} layout="horizontal" useBrandImage={true} />
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded-full px-2.5 py-0.5 shadow-2xs">
+            Office QR
+          </span>
+        </header>
+
+        <main className="w-full max-w-md mx-auto my-auto py-4">
+          <div className="rounded-2xl border border-rose-200 bg-white p-6 sm:p-7 text-center shadow-sm space-y-4">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200">
+              <AlertTriangle size={32} />
             </div>
-            <div className="space-y-1.5">
-              <h2 className="text-lg font-extrabold text-white">Invalid Office QR Code</h2>
-              <p className="text-xs text-rose-300 font-medium leading-relaxed">
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold text-slate-900">Invalid Office QR Code</h2>
+              <p className="text-xs text-rose-600 font-medium leading-relaxed">
                 {qrErrorMsg}
               </p>
             </div>
             <Link
               href="/login"
-              className="mt-4 block w-full rounded-2xl bg-slate-800 py-3 text-xs font-bold text-white hover:bg-slate-700 transition"
+              className="mt-4 block w-full rounded-xl bg-slate-900 py-3 text-xs font-semibold text-white hover:bg-slate-800 transition"
             >
               AimHop Portal Par Jayein
             </Link>
           </div>
-        </div>
+        </main>
+
+        <footer className="w-full max-w-md mx-auto pt-6 text-center text-xs text-slate-400">
+          <span>AimHop ERP · Physical Wall QR System</span>
+        </footer>
       </div>
     );
   }
@@ -82,7 +94,7 @@ export default async function AttendanceScanLandingPage({
           id: staffRecord.id,
           fullName: staffRecord.fullName,
           staffCode: staffRecord.staffCode,
-          department: staffRecord.department.name,
+          department: staffRecord.department?.name || "General",
           designation: staffRecord.designation,
         };
 
@@ -140,15 +152,32 @@ export default async function AttendanceScanLandingPage({
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
-      <QuickPunchClient
-        companyName={companyName}
-        cid={cid}
-        sig={sig}
-        sessionStaff={sessionStaff}
-        initialSuccess={initialSuccess}
-        isUnregisteredNotice={isUnregisteredUser}
-      />
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between p-4 sm:p-8">
+      {/* Top Header with AimHop Branding */}
+      <header className="w-full max-w-md mx-auto flex items-center justify-between pb-4">
+        <AimHopLogo size={32} layout="horizontal" useBrandImage={true} />
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded-full px-2.5 py-0.5 shadow-2xs">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          Wall QR Kiosk
+        </span>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="w-full max-w-md mx-auto my-auto py-2">
+        <QuickPunchClient
+          companyName={companyName}
+          cid={cid}
+          sig={sig}
+          sessionStaff={sessionStaff}
+          initialSuccess={initialSuccess}
+          isUnregisteredNotice={isUnregisteredUser}
+        />
+      </main>
+
+      {/* Footer */}
+      <footer className="w-full max-w-md mx-auto pt-6 text-center text-xs text-slate-400">
+        <span>AimHop ERP · Verified Office Attendance</span>
+      </footer>
     </div>
   );
 }
