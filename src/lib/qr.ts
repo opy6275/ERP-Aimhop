@@ -10,21 +10,27 @@ function getSecretKey(): string {
 }
 
 /**
- * Generate a cryptographically signed permanent QR URL/Payload for sticking on the office wall
+ * Generate permanent cryptographic signature for this company's physical office
  */
-export async function generateOfficeQrPayload(baseUrl?: string) {
-  const company = await prisma.company.findFirst();
-  const companyId = company?.id || "default";
-  const domain = (baseUrl || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
-
-  // Create permanent signature for this company's physical office
+export function getWallPosterSignature(companyId: string): string {
   const rawData = `${WALL_POSTER_PREFIX}:${companyId}`;
   const hmac = crypto.createHmac("sha256", getSecretKey());
   hmac.update(rawData);
-  const signature = hmac.digest("hex").slice(0, 24);
+  return hmac.digest("hex").slice(0, 24);
+}
+
+/**
+ * Generate a cryptographically signed permanent QR URL/Payload for the office wall
+ */
+export async function generateOfficeQrPayload(baseUrl?: string) {
+  const company = await prisma.company.findFirst();
+  const companyId = company?.id || "default-company";
+  const domain = (baseUrl || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+
+  const signature = getWallPosterSignature(companyId);
 
   // Encode a clean web scan URL so normal phone cameras can open it directly!
-  const scanUrl = `${domain || ""}/attendance/scan?cid=${companyId}&sig=${signature}`;
+  const scanUrl = `${domain || ""}/attendance/scan?cid=${encodeURIComponent(companyId)}&sig=${encodeURIComponent(signature)}`;
 
   return {
     scanUrl,
@@ -36,91 +42,108 @@ export async function generateOfficeQrPayload(baseUrl?: string) {
 }
 
 /**
- * Validate a scanned QR payload (supports both direct web URL and JSON payload)
+ * Robustly extract cid & sig from any scanned string (URL, query string, JSON, or colon-delimited)
+ */
+export function parseOfficeQrText(scannedText: string): { cid: string | null; sig: string | null } {
+  if (!scannedText || typeof scannedText !== "string") {
+    return { cid: null, sig: null };
+  }
+
+  const text = scannedText.trim();
+
+  // 1. If text contains query parameters (e.g. "https://erp.aimhop.com/attendance/scan?cid=...&sig=..." or "cid=...&sig=...")
+  if (text.includes("cid=") || text.includes("sig=")) {
+    const queryPart = text.includes("?") ? text.split("?")[1] : text;
+    try {
+      const params = new URLSearchParams(queryPart);
+      const cid = params.get("cid");
+      const sig = params.get("sig");
+      if (cid && sig) return { cid, sig };
+    } catch {
+      // Fall through
+    }
+  }
+
+  // 2. If text is JSON (e.g. {"cid":"...", "sig":"..."})
+  if (text.startsWith("{") && text.endsWith("}")) {
+    try {
+      const json = JSON.parse(text);
+      if (json.cid && json.sig) return { cid: String(json.cid), sig: String(json.sig) };
+    } catch {
+      // Fall through
+    }
+  }
+
+  // 3. If text is "cid:sig" format
+  if (text.includes(":")) {
+    const parts = text.split(":");
+    if (parts.length >= 2) {
+      return { cid: parts[0] || null, sig: parts[1] || null };
+    }
+  }
+
+  return { cid: null, sig: null };
+}
+
+/**
+ * Direct signature verification with support for both permanent wall QR and legacy daily token
+ */
+export function verifyOfficeSignature(
+  companyId: string | null | undefined,
+  signature: string | null | undefined
+): { valid: boolean; message?: string } {
+  if (!companyId || !signature) {
+    return {
+      valid: false,
+      message: "QR Code data incomplete. Kripya official AimHop Office Wall QR scan karein.",
+    };
+  }
+
+  // 1. Check permanent wall signature
+  const expectedWallSig = getWallPosterSignature(companyId);
+  if (signature === expectedWallSig) {
+    return { valid: true };
+  }
+
+  // 2. Fallback: check today's dynamic signature if legacy
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  const dailyRaw = `${QR_PREFIX}:${companyId}:${todayUtc}`;
+  const dailyHmac = crypto.createHmac("sha256", getSecretKey());
+  dailyHmac.update(dailyRaw);
+  const expectedDailySig = dailyHmac.digest("hex").slice(0, 16);
+
+  if (signature === expectedDailySig) {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    message: "Invalid or unrecognized Office QR code. Kripya office mein laga official poster scan karein.",
+  };
+}
+
+/**
+ * Validate a scanned QR payload (any string format)
  */
 export async function verifyOfficeQrPayload(scannedText: string): Promise<{
   valid: boolean;
   message?: string;
   companyId?: string;
 }> {
-  try {
-    if (!scannedText || typeof scannedText !== "string") {
-      return { valid: false, message: "Empty QR code data." };
-    }
-
-    const text = scannedText.trim();
-    let companyId: string | null = null;
-    let signature: string | null = null;
-
-    // Check 1: Scanned text is a full URL or URL with query params
-    if (text.includes("/attendance/scan") || text.includes("sig=")) {
-      try {
-        const url = new URL(text, "http://localhost");
-        companyId = url.searchParams.get("cid");
-        signature = url.searchParams.get("sig");
-      } catch {
-        // Continue to other parsers
-      }
-    }
-
-    // Check 2: Scanned text is a JSON object
-    if (!signature && (text.startsWith("{") && text.endsWith("}"))) {
-      try {
-        const json = JSON.parse(text);
-        if (json.cid && json.sig) {
-          companyId = json.cid;
-          signature = json.sig;
-        }
-      } catch {
-        // Continue
-      }
-    }
-
-    // Check 3: Scanned text is raw "cid:sig" format
-    if (!signature && text.includes(":")) {
-      const parts = text.split(":");
-      if (parts.length >= 2) {
-        companyId = parts[0];
-        signature = parts[1];
-      }
-    }
-
-    if (!companyId || !signature) {
-      return {
-        valid: false,
-        message: "Unrecognized QR Code. Kripya official AimHop Office Wall QR scan karein.",
-      };
-    }
-
-    // Verify cryptographic signature for permanent wall poster
-    const rawData = `${WALL_POSTER_PREFIX}:${companyId}`;
-    const hmac = crypto.createHmac("sha256", getSecretKey());
-    hmac.update(rawData);
-    const expectedSig = hmac.digest("hex").slice(0, 24);
-
-    if (signature === expectedSig) {
-      return { valid: true, companyId };
-    }
-
-    // Fallback: Check daily dynamic signature if legacy
-    const todayUtc = new Date().toISOString().slice(0, 10);
-    const dailyRaw = `${QR_PREFIX}:${companyId}:${todayUtc}`;
-    const dailyHmac = crypto.createHmac("sha256", getSecretKey());
-    dailyHmac.update(dailyRaw);
-    const expectedDailySig = dailyHmac.digest("hex").slice(0, 16);
-
-    if (signature === expectedDailySig) {
-      return { valid: true, companyId };
-    }
-
+  const { cid, sig } = parseOfficeQrText(scannedText);
+  if (!cid || !sig) {
     return {
       valid: false,
-      message: "QR Code verification failed: Invalid or counterfeit office signature.",
+      message: "Unrecognized QR Code. Kripya official AimHop Office Wall QR scan karein.",
     };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "QR Verification error";
-    return { valid: false, message: msg };
   }
+
+  const result = verifyOfficeSignature(cid, sig);
+  if (!result.valid) {
+    return { valid: false, message: result.message };
+  }
+
+  return { valid: true, companyId: cid };
 }
 
 /**
@@ -140,7 +163,7 @@ export async function generateOfficeQrDataUrl(baseUrl?: string): Promise<{
       dark: "#0f172a", // slate-900
       light: "#ffffff",
     },
-    errorCorrectionLevel: "H", // High redundancy for wall posters so scanning is effortless
+    errorCorrectionLevel: "H", // High redundancy for effortless phone camera scanning
   });
 
   return {
