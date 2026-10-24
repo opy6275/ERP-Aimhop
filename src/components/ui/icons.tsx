@@ -76,6 +76,7 @@ import {
   QrCode,
   Camera,
   Upload,
+  Globe,
 } from "lucide-react";
 
 export type IconProps = LucideProps;
@@ -157,4 +158,5 @@ export {
   QrCode,
   Camera,
   Upload,
+  Globe,
 };
