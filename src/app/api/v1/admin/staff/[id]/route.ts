@@ -105,8 +105,8 @@ export async function PATCH(request: Request, ctx: Ctx) {
       ...(d.photoUrl !== undefined ? { photoUrl: d.photoUrl } : {}),
       ...(d.gender !== undefined ? { gender: d.gender } : {}),
       ...(d.dateOfBirth !== undefined ? { dateOfBirth: d.dateOfBirth ? new Date(d.dateOfBirth) : null } : {}),
-      ...(d.mobile !== undefined ? { mobile: d.mobile } : {}),
-      ...(d.email !== undefined ? { email: d.email } : {}),
+      ...(d.mobile !== undefined ? { mobile: d.mobile?.trim() || null } : {}),
+      ...(d.email !== undefined ? { email: d.email ? d.email.trim().toLowerCase() : null } : {}),
       ...(d.address !== undefined ? { address: d.address } : {}),
       ...(d.departmentId ? { departmentId: d.departmentId } : {}),
       ...(d.categoryId ? { categoryId: d.categoryId } : {}),
@@ -127,6 +127,20 @@ export async function PATCH(request: Request, ctx: Ctx) {
       user: { select: { id: true, email: true, isActive: true, lastLoginAt: true } },
     },
   });
+
+  // If email was updated and staff has a linked user account, keep user email in sync
+  if (d.email && updated.user && updated.user.email !== d.email.trim().toLowerCase()) {
+    const newEmail = d.email.trim().toLowerCase();
+    const conflict = await prisma.user.findFirst({
+      where: { email: newEmail, id: { not: updated.user.id } },
+    });
+    if (!conflict) {
+      await prisma.user.update({
+        where: { id: updated.user.id },
+        data: { email: newEmail },
+      });
+    }
+  }
 
   // If status was updated and staff has a linked user account, keep user isActive in sync
   if (d.status && updated.user) {

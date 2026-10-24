@@ -23,7 +23,30 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!authUser.staffId) {
+  let staffId = authUser.staffId;
+
+  // Auto-heal: If staffId is missing from user record, auto-resolve via email/id and link it
+  if (!staffId) {
+    const matchedStaff = await prisma.staff.findFirst({
+      where: {
+        OR: [
+          { email: authUser.email },
+          { email: authUser.email.toLowerCase() },
+          { user: { id: authUser.id } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (matchedStaff) {
+      staffId = matchedStaff.id;
+      await prisma.user.update({
+        where: { id: authUser.id },
+        data: { staffId: matchedStaff.id },
+      }).catch(() => null);
+    }
+  }
+
+  if (!staffId) {
     return apiError(
       "STAFF_NOT_REGISTERED",
       "Aapka Staff Record is system mein nahi mila! Kripya apne Office Admin ya HR se contact karke apna Staff Registration karwayein.",
@@ -31,7 +54,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = authUser as typeof authUser & { staffId: string };
+  const effectiveStaffId = staffId;
+  const user = { ...authUser, staffId: effectiveStaffId };
 
   const body = await request.json().catch(() => ({}));
   const parsed = scanSchema.safeParse(body);
@@ -51,7 +75,7 @@ export async function POST(request: Request) {
 
   // 2. Fetch staff info & verify active status
   const staff = await prisma.staff.findUnique({
-    where: { id: user.staffId },
+    where: { id: effectiveStaffId },
     select: { id: true, fullName: true, staffCode: true, status: true, department: { select: { name: true } } },
   });
 

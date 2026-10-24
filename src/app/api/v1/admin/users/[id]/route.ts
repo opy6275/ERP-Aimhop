@@ -89,6 +89,19 @@ export async function PATCH(request: Request, ctx: Ctx) {
     },
   });
 
+  // Automatically keep linked staff record's email in sync
+  if (updated.staffId && updateData.email) {
+    await prisma.staff.update({
+      where: { id: updated.staffId },
+      data: { email: updateData.email },
+    }).catch(() => null);
+  } else if (updateData.staffId && !updateData.email) {
+    await prisma.staff.update({
+      where: { id: updateData.staffId },
+      data: { email: updated.email },
+    }).catch(() => null);
+  }
+
   await writeAudit({
     actorUserId: user.id,
     action: "user.update",

@@ -80,6 +80,14 @@ export async function POST(request: Request) {
     },
   });
 
+  // Automatically keep linked staff record's email in sync
+  if (staffId) {
+    await prisma.staff.update({
+      where: { id: staffId },
+      data: { email: email.toLowerCase() },
+    }).catch(() => null);
+  }
+
   await writeAudit({
     actorUserId: user.id,
     action: "user.create",
