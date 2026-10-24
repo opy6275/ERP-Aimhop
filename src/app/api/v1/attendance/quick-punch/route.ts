@@ -29,14 +29,18 @@ export async function POST(request: Request) {
   }
 
   const cleanId = identifier.trim();
+  const cleanUpper = cleanId.toUpperCase();
+  const cleanLower = cleanId.toLowerCase();
 
-  // Look up staff by staffCode, mobile, email, or ID
+  // Look up staff by staffCode, mobile, email, or ID (SQLite compatible)
   const staff = await prisma.staff.findFirst({
     where: {
       OR: [
-        { staffCode: { equals: cleanId, mode: "insensitive" } },
-        { mobile: { equals: cleanId } },
-        { email: { equals: cleanId, mode: "insensitive" } },
+        { staffCode: cleanId },
+        { staffCode: cleanUpper },
+        { mobile: cleanId },
+        { email: cleanId },
+        { email: cleanLower },
         { id: cleanId },
       ],
     },
