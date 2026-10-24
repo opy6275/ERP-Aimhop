@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Printer, CalendarCheck, Clock, X } from "@/components/ui/icons";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatTime } from "@/lib/format";
 
 type MonthlyAttendanceData = {
   month: string;
@@ -36,6 +36,7 @@ type MonthlyAttendanceData = {
     date: string;
     status: string;
     note?: string | null;
+    createdAt?: string | Date;
   }>;
 };
 
@@ -299,7 +300,8 @@ ${sheetEl.outerHTML}
                       <thead>
                         <tr className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200">
                           <th className="py-2 px-3 w-16">Date</th>
-                          <th className="py-2 px-3 w-28">Shift Day</th>
+                          <th className="py-2 px-3 w-24">Shift Day</th>
+                          <th className="py-2 px-3 w-28">Check-In Time</th>
                           <th className="py-2 px-3 w-28">Status</th>
                           <th className="py-2 px-3">Location & Check-In Remarks</th>
                         </tr>
@@ -307,7 +309,7 @@ ${sheetEl.outerHTML}
                       <tbody className="divide-y divide-slate-100">
                         {data.records.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="py-6 text-center text-slate-400">
+                            <td colSpan={5} className="py-6 text-center text-slate-400">
                               No shift check-ins recorded for this month.
                             </td>
                           </tr>
@@ -333,6 +335,9 @@ ${sheetEl.outerHTML}
                                   {formatDate(r.date)}
                                 </td>
                                 <td className="py-1.5 px-3 font-medium text-slate-600">{dayName}</td>
+                                <td className="py-1.5 px-3 font-mono text-slate-600 text-[11px]">
+                                  {r.createdAt ? formatTime(r.createdAt) : "—"}
+                                </td>
                                 <td className="py-1.5 px-3">
                                   <span
                                     className={`inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border ${

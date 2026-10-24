@@ -42,6 +42,18 @@ export function formatDateTime(d: Date | string | null | undefined): string {
   });
 }
 
+export function formatTime(d: Date | string | null | undefined): string {
+  if (!d) return "—";
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (isNaN(date.getTime())) return "—";
+  return date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  });
+}
+
 export function calculateAge(d: Date | string | null | undefined): number | null {
   if (!d) return null;
   const birth = typeof d === "string" ? new Date(d) : d;

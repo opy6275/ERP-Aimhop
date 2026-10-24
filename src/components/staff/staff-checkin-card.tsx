@@ -2,17 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Clock, CalendarCheck, MapPin } from "@/components/ui/icons";
+import { CheckCircle2, Clock, CalendarCheck, MapPin, QrCode, Sparkles } from "@/components/ui/icons";
+import { QrScannerModal } from "@/components/staff/qr-scanner-modal";
 
 export function StaffCheckinCard({
   todayStatus,
   todayApprovalStatus,
   todayNote,
+  todayCheckinTime,
   employeeName,
 }: {
   todayStatus: string | null;
   todayApprovalStatus?: string | null;
   todayNote: string | null;
+  todayCheckinTime?: Date | string | null;
   employeeName: string;
 }) {
   const router = useRouter();
@@ -20,11 +23,33 @@ export function StaffCheckinCard({
   const [currentApprovalStatus, setCurrentApprovalStatus] = useState<string | null>(
     todayApprovalStatus || (todayStatus ? "approved" : null),
   );
+  const [checkinTime, setCheckinTime] = useState<string | null>(
+    todayCheckinTime
+      ? new Date(todayCheckinTime).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "Asia/Kolkata",
+        })
+      : null,
+  );
   const [note, setNote] = useState<string>(todayNote || "");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
   const [showOptions, setShowOptions] = useState(false);
   const [liveTime, setLiveTime] = useState<string>("");
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+
+  const handleQrSuccess = (data: { checkinTime: string; message: string }) => {
+    setCurrentStatus("present");
+    setCurrentApprovalStatus("approved");
+    setCheckinTime(data.checkinTime);
+    setMessage({
+      text: `🎉 Verified via Office QR Code at ${data.checkinTime}! Attendance marked Present (Approved).`,
+      success: true,
+    });
+    router.refresh();
+  };
 
   useEffect(() => {
     const updateTime = () => {
@@ -68,8 +93,15 @@ export function StaffCheckinCard({
       }
       setCurrentStatus(statusToSet);
       setCurrentApprovalStatus("pending");
+      const timeNow = new Date().toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata",
+      });
+      setCheckinTime(timeNow);
       setMessage({
-        text: `Check-in request for ${statusToSet.toUpperCase().replace("_", " ")} submitted successfully! Awaiting Admin Approval.`,
+        text: `Check-in request for ${statusToSet.toUpperCase().replace("_", " ")} submitted successfully at ${timeNow}! Awaiting Admin Approval.`,
         success: true,
       });
       setShowOptions(false);
@@ -148,9 +180,17 @@ export function StaffCheckinCard({
                   <Clock size={20} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Check-in Submitted: <span className="uppercase text-amber-800 font-bold">{currentStatus.replace("_", " ")}</span> (Pending Admin Approval)
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-900">
+                      Check-in Submitted: <span className="uppercase text-amber-800 font-bold">{currentStatus.replace("_", " ")}</span>
+                    </p>
+                    {checkinTime && (
+                      <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-200">
+                        <Clock size={11} />
+                        Marked at {checkinTime} IST
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-amber-900/80 font-medium mt-0.5">
                     Your attendance request has been forwarded to management. It will reflect in your official register once accepted.
                   </p>
@@ -188,9 +228,17 @@ export function StaffCheckinCard({
                   <CheckCircle2 size={20} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Attendance Approved as <span className="uppercase text-emerald-700 font-bold">{currentStatus.replace("_", " ")}</span>
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-slate-900">
+                      Attendance Approved as <span className="uppercase text-emerald-700 font-bold">{currentStatus.replace("_", " ")}</span>
+                    </p>
+                    {checkinTime && (
+                      <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-emerald-900 bg-emerald-100/90 px-2 py-0.5 rounded-md border border-emerald-200">
+                        <Clock size={11} />
+                        Marked at {checkinTime} IST
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
                     Logged for {employeeName} {todayNote ? `· Note: "${todayNote}"` : ""}
                   </p>
@@ -220,22 +268,30 @@ export function StaffCheckinCard({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsQrScannerOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:from-blue-500 hover:to-indigo-500 active:scale-95 transition-all cursor-pointer"
+              >
+                <QrCode size={16} className="text-blue-200" />
+                <span>Scan Office QR</span>
+              </button>
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => handleCheckin("present")}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer disabled:opacity-60"
               >
-                <CheckCircle2 size={15} />
-                <span>{loading ? "Recording…" : "Check In (Present)"}</span>
+                <CheckCircle2 size={15} className="text-slate-500" />
+                <span>{loading ? "Recording…" : "Self Check-In"}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowOptions(!showOptions)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
               >
-                More Options…
+                More…
               </button>
             </div>
           </div>
@@ -300,6 +356,12 @@ export function StaffCheckinCard({
           </p>
         )}
       </div>
+
+      <QrScannerModal
+        isOpen={isQrScannerOpen}
+        onClose={() => setIsQrScannerOpen(false)}
+        onCheckinSuccess={handleQrSuccess}
+      />
     </div>
   );
 }

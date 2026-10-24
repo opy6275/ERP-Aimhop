@@ -15,6 +15,7 @@ import {
   Activity,
   Settings,
   LogOut,
+  LogIn,
   Plus,
   ArrowRight,
   ArrowUpRight,
@@ -72,6 +73,9 @@ import {
   Network,
   ListFilter,
   Crown,
+  QrCode,
+  Camera,
+  Upload,
 } from "lucide-react";
 
 export type IconProps = LucideProps;
@@ -92,6 +96,7 @@ export {
   Activity,
   Settings,
   LogOut,
+  LogIn,
   Plus,
   ArrowRight,
   ArrowUpRight,
@@ -149,4 +154,7 @@ export {
   Network,
   ListFilter,
   Crown,
+  QrCode,
+  Camera,
+  Upload,
 };

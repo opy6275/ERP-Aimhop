@@ -9,9 +9,10 @@ import { MonthlyAttendanceManager } from "@/components/admin/monthly-attendance-
 import { AttendanceApprovalsPanel } from "@/components/admin/attendance-approvals-panel";
 import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
-import { formatDate, toDateOnlyUtc } from "@/lib/format";
+import { formatDate, formatTime, toDateOnlyUtc } from "@/lib/format";
 import { CalendarCheck, CalendarDays, History, Clock } from "@/components/ui/icons";
 import { AdminMusterRollModal } from "@/components/attendance/admin-muster-roll-modal";
+import { OfficeQrButton } from "@/components/admin/office-qr-button";
 
 export default async function AttendancePage({
   searchParams,
@@ -55,7 +56,12 @@ export default async function AttendancePage({
           { label: "Operations", href: "/admin/attendance" },
           { label: "Attendance" },
         ]}
-        actionNode={<AdminMusterRollModal />}
+        actionNode={
+          <div className="flex flex-wrap items-center gap-2">
+            <OfficeQrButton />
+            <AdminMusterRollModal />
+          </div>
+        }
       />
 
       {/* Top Navigation View Tabs */}
@@ -142,10 +148,16 @@ export default async function AttendancePage({
             {history.length === 0 ? (
               <p className="text-sm text-slate-400 py-6 text-center">No attendance history logged yet.</p>
             ) : (
-              <DataTable headers={["Date", "Employee", "Department", "Recorded Status"]}>
+              <DataTable headers={["Date", "Time", "Employee", "Department", "Recorded Status"]}>
                 {history.map((h) => (
                   <tr key={h.id} className="transition-colors hover:bg-slate-50/60">
                     <Td className="font-medium text-slate-700">{formatDate(h.date)}</Td>
+                    <Td className="text-slate-500 font-mono text-xs">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-slate-700">
+                        <Clock size={11} className="text-slate-400" />
+                        {formatTime(h.createdAt)}
+                      </span>
+                    </Td>
                     <Td>
                       <span className="font-semibold text-slate-900">{h.staff.fullName}</span>
                       <span className="ml-2 font-mono text-xs text-slate-400">{h.staff.staffCode}</span>

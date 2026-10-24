@@ -6,9 +6,10 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { DataTable, Td } from "@/components/ui/data-table";
 import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
-import { formatDate, toDateOnlyUtc } from "@/lib/format";
+import { formatDate, formatTime, toDateOnlyUtc } from "@/lib/format";
 import { StaffCheckinCard } from "@/components/staff/staff-checkin-card";
 import { StaffMonthlySheetModal } from "@/components/attendance/staff-monthly-sheet-modal";
+import { Clock } from "@/components/ui/icons";
 
 export default async function StaffAttendancePage() {
   const { session, user, roleLabel } = await requirePageSession({ staffOnly: true });
@@ -83,6 +84,7 @@ export default async function StaffAttendancePage() {
           todayStatus={todayAttendance?.status || null}
           todayApprovalStatus={(todayAttendance as Record<string, any>)?.approvalStatus || null}
           todayNote={todayAttendance?.note || null}
+          todayCheckinTime={todayAttendance?.createdAt || null}
           employeeName={staff.fullName}
         />
       )}
@@ -107,12 +109,18 @@ export default async function StaffAttendancePage() {
             No attendance records logged yet.
           </div>
         ) : (
-          <DataTable headers={["Shift Date", "Status", "Remarks / Notes"]}>
+          <DataTable headers={["Shift Date", "Check-In Time", "Status", "Remarks / Notes"]}>
             {records.map((r) => {
               const approval = (r as Record<string, any>).approvalStatus;
               return (
                 <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
                   <Td className="font-medium text-slate-800">{formatDate(r.date)}</Td>
+                  <Td className="text-slate-600 font-mono text-xs">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-slate-700">
+                      <Clock size={11} className="text-slate-400" />
+                      {formatTime(r.createdAt)}
+                    </span>
+                  </Td>
                   <Td>
                     {approval === "pending" ? (
                       <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-700">
