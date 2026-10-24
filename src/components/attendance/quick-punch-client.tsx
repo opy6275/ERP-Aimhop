@@ -90,21 +90,32 @@ export function QuickPunchClient({
         return;
       }
 
+      // Extract staff and metadata supporting both top-level and nested response formats
+      const staffObj = data.staff || data.data?.staff;
+      const alreadyMarked = data.alreadyMarked ?? data.data?.alreadyMarked ?? false;
+      const message = data.message || data.data?.message || "Attendance lag chuki hai (Present)!";
+      const checkinTime = data.checkinTime || data.data?.checkinTime || new Date().toLocaleTimeString("en-IN");
+
       // Success! Remember this staff on this phone so future scans are 100% instant
       try {
-        if (data.data?.staff?.staffCode) {
-          localStorage.setItem("aimhop_saved_staff_code", data.data.staff.staffCode);
-          localStorage.setItem("aimhop_saved_staff_name", data.data.staff.fullName);
+        if (staffObj?.staffCode) {
+          localStorage.setItem("aimhop_saved_staff_code", staffObj.staffCode);
+          localStorage.setItem("aimhop_saved_staff_name", staffObj.fullName || "");
         }
       } catch {
         // Ignore storage error
       }
 
       setSuccessData({
-        alreadyMarked: data.data?.alreadyMarked || false,
-        message: data.data?.message || "Attendance lag chuki hai (Present)!",
-        checkinTime: data.data?.checkinTime || new Date().toLocaleTimeString("en-IN"),
-        staff: data.data?.staff,
+        alreadyMarked,
+        message,
+        checkinTime,
+        staff: staffObj || {
+          id: "",
+          fullName: "Staff Member",
+          staffCode: idToUse.trim().toUpperCase(),
+          department: "General",
+        },
       });
     } catch {
       setErrorMessage("Network error. Kripya internet connection check karke dubara try karein.");
@@ -181,7 +192,7 @@ export function QuickPunchClient({
               {successData.alreadyMarked ? "Already Marked Today" : "Attendance Recorded (Present)"}
             </div>
             <h2 className="text-2xl font-black text-white tracking-tight">
-              Welcome, {successData.staff.fullName}!
+              Welcome, {successData.staff?.fullName || "Staff Member"}!
             </h2>
             <p className="text-xs text-emerald-400 font-semibold">
               {successData.alreadyMarked
@@ -196,19 +207,19 @@ export function QuickPunchClient({
               <span className="text-slate-400 flex items-center gap-1.5">
                 <User size={13} className="text-blue-400" /> Employee Name:
               </span>
-              <span className="font-bold text-white">{successData.staff.fullName}</span>
+              <span className="font-bold text-white">{successData.staff?.fullName || "Staff Member"}</span>
             </div>
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
               <span className="text-slate-400 flex items-center gap-1.5">
                 <ShieldCheck size={13} className="text-emerald-400" /> Staff ID:
               </span>
-              <span className="font-mono font-bold text-blue-400">{successData.staff.staffCode}</span>
+              <span className="font-mono font-bold text-blue-400">{successData.staff?.staffCode || "N/A"}</span>
             </div>
             <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
               <span className="text-slate-400 flex items-center gap-1.5">
                 <Building2 size={13} className="text-blue-400" /> Department:
               </span>
-              <span className="font-semibold text-slate-200">{successData.staff.department}</span>
+              <span className="font-semibold text-slate-200">{successData.staff?.department || "General"}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-400 flex items-center gap-1.5">
