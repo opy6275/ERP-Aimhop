@@ -35,13 +35,14 @@ export default async function AdminDashboardPage() {
   const sevenDays: { dateStr: string; label: string; dateObj: Date }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
-    const dateStr = d.toISOString().slice(0, 10);
+    const dateObj = toDateOnlyUtc(d);
+    const dateStr = dateObj.toISOString().slice(0, 10);
     const label = new Intl.DateTimeFormat("en-IN", {
       weekday: "short",
       day: "2-digit",
       timeZone: "Asia/Kolkata",
     }).format(d);
-    sevenDays.push({ dateStr, label, dateObj: toDateOnlyUtc(dateStr) });
+    sevenDays.push({ dateStr, label, dateObj });
   }
 
   const [
@@ -77,7 +78,7 @@ export default async function AdminDashboardPage() {
     }),
     prisma.staff.findMany({
       where: { status: "active" },
-      select: { id: true, salaryAmount: true },
+      select: { id: true, salaryAmount: true, paymentType: true },
     }),
     prisma.staff.findMany({
       orderBy: { createdAt: "desc" },
@@ -116,7 +117,9 @@ export default async function AdminDashboardPage() {
   let pendingTotal = 0;
   for (const s of activeStaffRows) {
     const payments = monthPayments.filter((p) => p.staffId === s.id);
-    const bal = computePeriodBalance(decimalToNumber(s.salaryAmount), payments);
+    const bal = computePeriodBalance(decimalToNumber(s.salaryAmount), payments, {
+      paymentType: s.paymentType,
+    });
     pendingTotal += bal.pending;
   }
 

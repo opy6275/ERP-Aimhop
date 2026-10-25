@@ -7,7 +7,7 @@ import { DataTable, Td } from "@/components/ui/data-table";
 import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate, formatInr, formatMonthLabel } from "@/lib/format";
-import { computePeriodBalance } from "@/lib/domain";
+import { computePeriodBalance, getStaffPeriodBalance } from "@/lib/domain";
 
 export default async function StaffPaymentsPage() {
   const { session, user, roleLabel } = await requirePageSession({ staffOnly: true });
@@ -38,7 +38,9 @@ export default async function StaffPaymentsPage() {
       ])
     : [[], []];
 
-  const balance = computePeriodBalance(salary, currentMonthPayments);
+  const balance =
+    (staffId ? await getStaffPeriodBalance(staffId, periodMonth) : null) ||
+    computePeriodBalance(salary, currentMonthPayments);
 
   return (
     <AppShell title="My Payments" email={session.email} roleLabel={roleLabel} variant="staff">

@@ -1,7 +1,7 @@
 import { isErrorResponse, requireStaffSelf } from "@/lib/rbac";
 import { apiOk } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
-import { computePeriodBalance } from "@/lib/domain";
+import { getStaffPeriodBalance } from "@/lib/domain";
 import { decimalToNumber, parsePeriodMonth } from "@/lib/format";
 
 export async function GET(request: Request) {
@@ -25,10 +25,7 @@ export async function GET(request: Request) {
   });
 
   const balance = periodMonth
-    ? computePeriodBalance(
-        decimalToNumber(staff.salaryAmount),
-        payments.map((p) => ({ amount: p.amount, paymentKind: p.paymentKind })),
-      )
+    ? await getStaffPeriodBalance(user.staffId, periodMonth)
     : null;
 
   return apiOk({

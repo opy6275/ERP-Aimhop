@@ -10,7 +10,7 @@ import { Users, Building2, Tags, CreditCard } from "@/components/ui/icons";
 export default async function ReportsPage() {
   const { session, roleLabel } = await requirePageSession({ adminOnly: true });
 
-  const [byDept, byCat, active, inactive, totalStaff, payments] = await Promise.all([
+  const [byDept, byCat, active, inactive, totalStaff, paymentsAgg] = await Promise.all([
     prisma.department.findMany({
       orderBy: { name: "asc" },
       include: { _count: { select: { staff: { where: { status: "active" } } } } },
@@ -22,12 +22,13 @@ export default async function ReportsPage() {
     prisma.staff.count({ where: { status: "active" } }),
     prisma.staff.count({ where: { status: "inactive" } }),
     prisma.staff.count(),
-    prisma.payment.findMany({ select: { amount: true, paymentKind: true } }),
+    prisma.payment.aggregate({
+      _sum: { amount: true },
+      where: { paymentKind: { not: "deduction" } },
+    }),
   ]);
 
-  const totalPaid = payments
-    .filter((p) => p.paymentKind !== "deduction")
-    .reduce((s, p) => s + decimalToNumber(p.amount), 0);
+  const totalPaid = decimalToNumber(paymentsAgg._sum.amount ?? 0);
 
   return (
     <AppShell title="Analytics & Reports" email={session.email} roleLabel={roleLabel} variant="admin">

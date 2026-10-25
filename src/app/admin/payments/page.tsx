@@ -62,8 +62,8 @@ export default async function PaymentsPage({
           ? {
               staff: {
                 OR: [
-                  { fullName: { contains: q } },
-                  { staffCode: { contains: q } },
+                  { fullName: { contains: q, mode: "insensitive" as const } },
+                  { staffCode: { contains: q, mode: "insensitive" as const } },
                 ],
               },
             }
@@ -83,7 +83,7 @@ export default async function PaymentsPage({
         receipt: { select: { id: true, receiptNumber: true } },
       },
     }),
-    prisma.staff.findMany({ where: { status: "active" }, select: { id: true, salaryAmount: true } }),
+    prisma.staff.findMany({ where: { status: "active" }, select: { id: true, salaryAmount: true, paymentType: true } }),
     prisma.payment.findMany({
       where: { periodMonth },
       select: { amount: true, paymentKind: true, staffId: true },
@@ -99,6 +99,7 @@ export default async function PaymentsPage({
     const bal = computePeriodBalance(
       decimalToNumber(s.salaryAmount),
       monthPayments.filter((p) => p.staffId === s.id),
+      { paymentType: s.paymentType },
     );
     pending += bal.pending;
   }

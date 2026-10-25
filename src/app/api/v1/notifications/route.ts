@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireAuth, isErrorResponse } from "@/lib/rbac";
+import { getSession } from "@/lib/auth";
+import { apiError } from "@/lib/api-response";
 import { getRecentNotifications, markNotificationsAsRead } from "@/lib/notifications";
 
 export async function GET() {
-  const user = await requireAuth();
-  if (isErrorResponse(user)) return user;
+  const session = await getSession();
+  if (!session) return apiError("UNAUTHORIZED", "Sign in required", 401);
 
-  const isAdmin = user.role.slug === "admin" || user.role.slug === "superadmin";
-  const notifications = await getRecentNotifications(user.id, isAdmin);
+  const isAdmin = session.role === "admin" || session.role === "super_admin" || session.role === "superadmin";
+  const notifications = await getRecentNotifications(session.userId, isAdmin);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return NextResponse.json({
@@ -19,11 +20,12 @@ export async function GET() {
 }
 
 export async function POST() {
-  const user = await requireAuth();
-  if (isErrorResponse(user)) return user;
+  const session = await getSession();
+  if (!session) return apiError("UNAUTHORIZED", "Sign in required", 401);
 
-  const isAdmin = user.role.slug === "admin" || user.role.slug === "superadmin";
-  await markNotificationsAsRead(user.id, isAdmin);
+  const isAdmin = session.role === "admin" || session.role === "super_admin" || session.role === "superadmin";
+  await markNotificationsAsRead(session.userId, isAdmin);
 
   return NextResponse.json({ ok: true });
 }
+

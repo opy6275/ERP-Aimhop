@@ -20,13 +20,12 @@ export interface LeaveBalanceData {
 
 export async function getOrCreateStaffLeaveBalance(staffId: string, year?: number): Promise<LeaveBalanceData> {
   const currentYear = year || new Date().getFullYear();
-  let row = await prisma.leaveBalance.findUnique({
-    where: { staffId_year: { staffId, year: currentYear } },
-  });
-
-  if (!row) {
-    row = await prisma.leaveBalance.create({
-      data: {
+  let row;
+  try {
+    row = await prisma.leaveBalance.upsert({
+      where: { staffId_year: { staffId, year: currentYear } },
+      update: {},
+      create: {
         staffId,
         year: currentYear,
         clTotal: 12,
@@ -37,6 +36,18 @@ export async function getOrCreateStaffLeaveBalance(staffId: string, year?: numbe
         plUsed: 0,
       },
     });
+  } catch (err: unknown) {
+    if ((err as { code?: string })?.code === "P2002") {
+      row = await prisma.leaveBalance.findUnique({
+        where: { staffId_year: { staffId, year: currentYear } },
+      });
+    } else {
+      throw err;
+    }
+  }
+
+  if (!row) {
+    throw new Error(`Failed to initialize leave balance for staff ID ${staffId}`);
   }
 
   const clTotal = decimalToNumber(row.clTotal);
@@ -180,13 +191,18 @@ export async function createLeaveRequest(params: {
     );
   }
 
+  // Calculate calendar days to prevent negative or arbitrary invalid values
+  const msDiff = e.getTime() - s.getTime();
+  const calendarDays = Math.round(msDiff / (1000 * 60 * 60 * 24)) + 1;
+  const effectiveDaysCount = params.daysCount > 0 && params.daysCount <= calendarDays ? params.daysCount : calendarDays;
+
   const created = await prisma.leaveRequest.create({
     data: {
       staffId: params.staffId,
       leaveType: params.leaveType,
       startDate: s,
       endDate: e,
-      daysCount: params.daysCount,
+      daysCount: effectiveDaysCount,
       reason: params.reason.trim(),
       status: "pending",
     },
@@ -256,9 +272,9 @@ export async function getAllLeaveRequests(filters?: {
   if (filters?.search && filters.search.trim()) {
     const q = filters.search.trim();
     where.OR = [
-      { reason: { contains: q } },
-      { staff: { fullName: { contains: q } } },
-      { staff: { staffCode: { contains: q } } },
+      { reason: { contains: q, mode: "insensitive" } },
+      { staff: { fullName: { contains: q, mode: "insensitive" } } },
+      { staff: { staffCode: { contains: q, mode: "insensitive" } } },
     ];
   }
 
@@ -301,54 +317,47 @@ export async function reviewLeaveRequest(params: {
 
   const note = params.reviewNote?.trim() || null;
 
-  // 1. Update leave request record
-  const updated = await prisma.leaveRequest.update({
-    where: { id: params.leaveId },
-    data: {
-      status: params.status,
-      reviewNote: note,
-      reviewedById: params.reviewerUserId,
-      reviewedAt: new Date(),
-    },
-    include: {
-      staff: {
-        select: {
-          staffCode: true,
-          fullName: true,
-          department: { select: { name: true } },
-        },
+  // Execute review, attendance upsert, and quota update in an atomic transaction
+  const updated = await prisma.$transaction(async (tx) => {
+    // 1. Update leave request record
+    const up = await tx.leaveRequest.update({
+      where: { id: params.leaveId },
+      data: {
+        status: params.status,
+        reviewNote: note,
+        reviewedById: params.reviewerUserId,
+        reviewedAt: new Date(),
       },
-      reviewedBy: { select: { email: true } },
-    },
-  });
+      include: {
+        staff: {
+          select: {
+            staffCode: true,
+            fullName: true,
+            department: { select: { name: true } },
+          },
+        },
+        reviewedBy: { select: { email: true } },
+      },
+    });
 
-  // 2. If approved, automatically sync attendance records for the entire range
-  if (params.status === "approved") {
-    const startDate = new Date(leave.startDate);
-    const endDate = new Date(leave.endDate);
+    // 2. If approved, automatically sync attendance records for the entire range
+    if (params.status === "approved") {
+      const startDate = new Date(leave.startDate);
+      const endDate = new Date(leave.endDate);
 
-    const cur = new Date(startDate);
-    while (cur <= endDate) {
-      const dayDate = toDateOnlyUtc(cur);
+      const cur = new Date(startDate);
+      while (cur <= endDate) {
+        const dayDate = toDateOnlyUtc(cur);
 
-      // Upsert attendance record for this day
-      const existing = await prisma.attendanceRecord.findUnique({
-        where: { staffId_date: { staffId: leave.staffId, date: dayDate } },
-      });
-
-      if (existing) {
-        await prisma.attendanceRecord.update({
-          where: { id: existing.id },
-          data: {
+        await tx.attendanceRecord.upsert({
+          where: { staffId_date: { staffId: leave.staffId, date: dayDate } },
+          update: {
             status: "leave",
             approvalStatus: "approved",
             note: `Approved leave: ${leave.reason.slice(0, 80)}`,
             markedById: params.reviewerUserId,
           },
-        });
-      } else {
-        await prisma.attendanceRecord.create({
-          data: {
+          create: {
             staffId: leave.staffId,
             date: dayDate,
             status: "leave",
@@ -357,37 +366,39 @@ export async function reviewLeaveRequest(params: {
             markedById: params.reviewerUserId,
           },
         });
+
+        cur.setUTCDate(cur.getUTCDate() + 1);
       }
 
-      cur.setUTCDate(cur.getUTCDate() + 1);
-    }
-
-    // 2.1 Deduct leave quota from staff LeaveBalance
-    try {
+      // 2.1 Deduct leave quota atomically using database increment
       const leaveYear = new Date(leave.startDate).getFullYear();
-      const currentBal = await getOrCreateStaffLeaveBalance(leave.staffId, leaveYear);
       const days = Number(leave.daysCount);
 
-      if (leave.leaveType === "casual") {
-        await prisma.leaveBalance.update({
-          where: { staffId_year: { staffId: leave.staffId, year: leaveYear } },
-          data: { clUsed: currentBal.clUsed + days },
-        });
-      } else if (leave.leaveType === "sick") {
-        await prisma.leaveBalance.update({
-          where: { staffId_year: { staffId: leave.staffId, year: leaveYear } },
-          data: { slUsed: currentBal.slUsed + days },
-        });
-      } else if (leave.leaveType === "paid") {
-        await prisma.leaveBalance.update({
-          where: { staffId_year: { staffId: leave.staffId, year: leaveYear } },
-          data: { plUsed: currentBal.plUsed + days },
-        });
-      }
-    } catch (balErr) {
-      console.error("Failed to update leave balance quota:", balErr);
+      await tx.leaveBalance.upsert({
+        where: { staffId_year: { staffId: leave.staffId, year: leaveYear } },
+        create: {
+          staffId: leave.staffId,
+          year: leaveYear,
+          clTotal: 12,
+          clUsed: leave.leaveType === "casual" ? days : 0,
+          slTotal: 8,
+          slUsed: leave.leaveType === "sick" ? days : 0,
+          plTotal: 15,
+          plUsed: leave.leaveType === "paid" ? days : 0,
+        },
+        update: {
+          ...(leave.leaveType === "casual" ? { clUsed: { increment: days } } : {}),
+          ...(leave.leaveType === "sick" ? { slUsed: { increment: days } } : {}),
+          ...(leave.leaveType === "paid" ? { plUsed: { increment: days } } : {}),
+        },
+      });
     }
-  }
+
+    return up;
+  }, {
+    maxWait: 15000,
+    timeout: 25000,
+  });
 
   // 3. Notify the employee user about decision
   try {

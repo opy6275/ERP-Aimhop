@@ -131,6 +131,18 @@ export async function POST(request: Request) {
   const { status, note } = parsed.data;
   const today = toDateOnlyUtc(new Date());
 
+  const existing = await prisma.attendanceRecord.findUnique({
+    where: { staffId_date: { staffId: user.staffId, date: today } },
+  });
+
+  if (existing && existing.approvalStatus === "approved") {
+    return apiError(
+      "ALREADY_RECORDED",
+      `Aapki attendance aaj pehle se hi approved hai (${existing.status.toUpperCase().replace("_", " ")}). Isko overwrite nahi kiya ja sakta.`,
+      400
+    );
+  }
+
   const record = await prisma.attendanceRecord.upsert({
     where: { staffId_date: { staffId: user.staffId, date: today } },
     update: {

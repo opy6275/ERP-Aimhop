@@ -70,10 +70,10 @@ export async function PUT(request: Request) {
   if (!parsed.success) return apiError("VALIDATION_ERROR", "Invalid attendance payload", 400);
 
   const day = toDateOnlyUtc(parsed.data.date);
-  const results = [];
 
-  for (const r of parsed.data.records) {
-    const row = await prisma.attendanceRecord.upsert({
+  // Pipeline all upserts in a single transactional batch to avoid N-roundtrip network latency
+  const ops = parsed.data.records.map((r) =>
+    prisma.attendanceRecord.upsert({
       where: { staffId_date: { staffId: r.staffId, date: day } },
       update: { status: r.status, approvalStatus: "approved", note: r.note || null, markedById: user.id },
       create: {
@@ -84,9 +84,10 @@ export async function PUT(request: Request) {
         note: r.note || null,
         markedById: user.id,
       },
-    });
-    results.push(row);
-  }
+    })
+  );
+
+  const results = await prisma.$transaction(ops);
 
   await writeAudit({
     actorUserId: user.id,

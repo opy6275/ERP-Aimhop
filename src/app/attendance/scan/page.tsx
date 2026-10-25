@@ -104,43 +104,15 @@ export default async function AttendanceScanLandingPage({
 
         const alreadyMarked = Boolean(existing && existing.status === "present");
 
-        if (!alreadyMarked) {
-          const record = await prisma.attendanceRecord.upsert({
-            where: { staffId_date: { staffId: staffRecord.id, date: todayUtc } },
-            update: {
-              status: "present",
-              approvalStatus: "approved",
-              note: `Verified Wall QR Scan at ${checkinTimeStr}`,
-              markedById: authUser.id,
-            },
-            create: {
-              staffId: staffRecord.id,
-              date: todayUtc,
-              status: "present",
-              approvalStatus: "approved",
-              note: `Verified Wall QR Scan at ${checkinTimeStr}`,
-              markedById: authUser.id,
-            },
-          });
-
-          await writeAudit({
-            actorUserId: authUser.id,
-            action: "attendance.qr_wall_checkin",
-            entityType: "attendance",
-            entityId: record.id,
-            targetLabel: `${staffRecord.fullName} (${staffRecord.staffCode}) - Wall QR Scan at ${checkinTimeStr}`,
-          });
+        if (alreadyMarked) {
+          // If already marked, display confirmation immediately
+          initialSuccess = {
+            alreadyMarked: true,
+            message: "Aapki attendance aaj ke din pehle se hi recorded hai.",
+            checkinTime: checkinTimeStr,
+            staff: sessionStaff,
+          };
         }
-
-        // Direct Access Success data for immediate display
-        initialSuccess = {
-          alreadyMarked,
-          message: alreadyMarked
-            ? "Aapki attendance aaj ke din pehle se hi recorded hai."
-            : "Aapki attendance safaltapoorvak lag chuki hai (Present).",
-          checkinTime: checkinTimeStr,
-          staff: sessionStaff,
-        };
       } else {
         // User logged in but staff profile inactive or not found
         isUnregisteredUser = true;

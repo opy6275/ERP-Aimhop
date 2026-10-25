@@ -44,9 +44,25 @@ export function NotificationBell({ variant = "admin" }: { variant?: "admin" | "s
 
   useEffect(() => {
     fetchNotifications();
-    // Refresh every 30 seconds
-    const timer = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(timer);
+
+    // Only poll when page is visible to save connection pool slots
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchNotifications();
+      }
+    }, 60000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchNotifications();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, []);
 
   // Close dropdown on outside click

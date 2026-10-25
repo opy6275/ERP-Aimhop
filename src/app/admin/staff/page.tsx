@@ -39,10 +39,10 @@ export default async function StaffListPage({
         ...(q
           ? {
               OR: [
-                { fullName: { contains: q } },
-                { staffCode: { contains: q } },
-                { email: { contains: q } },
-                { mobile: { contains: q } },
+                { fullName: { contains: q, mode: "insensitive" as const } },
+                { staffCode: { contains: q, mode: "insensitive" as const } },
+                { email: { contains: q, mode: "insensitive" as const } },
+                { mobile: { contains: q, mode: "insensitive" as const } },
               ],
             }
           : {}),

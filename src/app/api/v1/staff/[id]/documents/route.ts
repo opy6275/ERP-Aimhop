@@ -62,6 +62,29 @@ export async function POST(
       );
     }
 
+    // Security: Validate payload size (max ~5MB file which corresponds to ~7MB base64 string)
+    if (typeof fileData !== "string" || fileData.length > 7 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "Document payload exceeds maximum allowed size (5MB)" },
+        { status: 413 },
+      );
+    }
+
+    // Security: Validate allowed MIME type prefixes
+    const allowedPrefixes = [
+      "data:image/jpeg;base64,",
+      "data:image/png;base64,",
+      "data:image/webp;base64,",
+      "data:application/pdf;base64,",
+    ];
+    const isAllowedFormat = allowedPrefixes.some((prefix) => fileData.startsWith(prefix));
+    if (!isAllowedFormat) {
+      return NextResponse.json(
+        { error: "Only PDF, JPEG, PNG, and WEBP document formats are permitted." },
+        { status: 415 },
+      );
+    }
+
     const doc = await prisma.staffDocument.create({
       data: {
         staffId,

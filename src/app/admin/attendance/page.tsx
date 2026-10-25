@@ -33,7 +33,7 @@ export default async function AttendancePage({
     }),
     prisma.attendanceRecord.findMany({ where: { date: day } }),
     prisma.attendanceRecord.findMany({
-      orderBy: [{ date: "desc" }, { staff: { fullName: "asc" } }],
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       take: 30,
       include: {
         staff: { select: { fullName: true, staffCode: true, department: { select: { name: true } } } },

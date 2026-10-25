@@ -78,10 +78,10 @@ export async function GET(request: Request) {
     ...(q
       ? {
           OR: [
-            { fullName: { contains: q } },
-            { staffCode: { contains: q } },
-            { email: { contains: q } },
-            { mobile: { contains: q } },
+            { fullName: { contains: q, mode: "insensitive" as const } },
+            { staffCode: { contains: q, mode: "insensitive" as const } },
+            { email: { contains: q, mode: "insensitive" as const } },
+            { mobile: { contains: q, mode: "insensitive" as const } },
           ],
         }
       : {}),
@@ -205,6 +205,9 @@ export async function POST(request: Request) {
     }
 
     return { staff: s, userAccount: u };
+  }, {
+    maxWait: 15000,
+    timeout: 25000,
   });
 
   await writeAudit({

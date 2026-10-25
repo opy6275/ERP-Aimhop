@@ -48,9 +48,23 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  if (pathname.startsWith("/api/v1/staff") && !session) {
+    return NextResponse.json(
+      { code: "UNAUTHORIZED", message: "Sign in required" },
+      { status: 401 },
+    );
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/login", "/admin/:path*", "/app/:path*", "/api/v1/me/:path*", "/api/v1/admin/:path*"],
+  matcher: [
+    "/login",
+    "/admin/:path*",
+    "/app/:path*",
+    "/api/v1/me/:path*",
+    "/api/v1/admin/:path*",
+    "/api/v1/staff/:path*",
+  ],
 };

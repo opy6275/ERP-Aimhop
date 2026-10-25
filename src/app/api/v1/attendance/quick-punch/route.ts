@@ -20,12 +20,22 @@ export async function POST(request: Request) {
 
   const { identifier, cid, sig } = parsed.data;
 
-  // Optional: If cid/sig provided, verify it
-  if (cid && sig) {
-    const verification = verifyOfficeSignature(cid, sig);
-    if (!verification.valid) {
-      return apiError("INVALID_QR", "Office QR code invalid ya expired hai.", 400);
-    }
+  // Enforce Office QR Cryptographic Verification: cid & sig are strictly required
+  if (!cid || !sig) {
+    return apiError(
+      "INVALID_QR",
+      "Attendance lagane ke liye official Office Wall QR scan karna zaroori hai.",
+      400
+    );
+  }
+
+  const verification = verifyOfficeSignature(cid, sig);
+  if (!verification.valid) {
+    return apiError(
+      "INVALID_QR",
+      verification.message || "Office QR code invalid ya expired hai.",
+      400
+    );
   }
 
   const cleanId = identifier.trim();

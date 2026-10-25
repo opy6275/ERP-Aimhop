@@ -7,7 +7,7 @@ import { DataTable, Td } from "@/components/ui/data-table";
 import { requirePageSession } from "@/lib/require-page-session";
 import { prisma } from "@/lib/prisma";
 import { decimalToNumber, formatDate, formatInr, formatMonthLabel, toDateOnlyUtc } from "@/lib/format";
-import { computePeriodBalance } from "@/lib/domain";
+import { computePeriodBalance, getStaffPeriodBalance } from "@/lib/domain";
 import { StaffCheckinCard } from "@/components/staff/staff-checkin-card";
 import {
   CalendarCheck,
@@ -77,7 +77,9 @@ export default async function StaffDashboardPage() {
     : [null, [], 0, [], [], []];
 
   const salary = staff ? decimalToNumber(staff.salaryAmount) : 0;
-  const balance = staff ? computePeriodBalance(salary, monthPayments) : { paid: 0, pending: 0 };
+  const balance = staff && staffId
+    ? (await getStaffPeriodBalance(staffId, periodMonth)) || computePeriodBalance(salary, monthPayments)
+    : { paid: 0, pending: 0, payable: 0, deductions: 0, adjustments: 0, netPaid: 0 };
 
   const initials = staff?.fullName
     ? staff.fullName
